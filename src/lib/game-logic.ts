@@ -1,4 +1,13 @@
-import type { Board, PieceType, Position, GameState } from './types'
+// 타입 정의
+export type PieceType = 0 | 1 | 2 | 3 | 4 | 5
+export type Board = PieceType[][]
+export type Position = { row: number; col: number }
+export type GameState = {
+    board: Board
+    score: number
+    combo: number
+    isAnimating: boolean
+}
 
 // 게임 상수
 export const BOARD_SIZE = 8

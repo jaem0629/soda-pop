@@ -1,5 +1,5 @@
 import { useReducer, useCallback } from 'react'
-import type { Board, Position, GameState, PieceType } from '@/lib/types'
+import type { Board, Position, GameState, PieceType } from '@/lib/game-logic'
 import {
     createInitialGameState,
     swapPieces,

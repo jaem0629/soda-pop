@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { Position, PieceType } from '@/lib/types'
+import type { Position, PieceType } from '@/lib/game-logic'
 import type { DropInfo } from './use-game-reducer'
 
 // 애니메이션 상태 타입

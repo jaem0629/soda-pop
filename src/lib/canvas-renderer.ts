@@ -1,4 +1,4 @@
-import type { Board, Position } from './types'
+import type { Board, Position } from './game-logic'
 import { BOARD_SIZE, PIECE_COLORS, PIECE_SHAPES } from './game-logic'
 import type { AnimationState } from '@/hooks/use-game-animation'
 import { easing } from '@/hooks/use-game-animation'

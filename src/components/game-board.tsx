@@ -15,7 +15,7 @@ import {
     findAllMatches,
     calculateScore,
 } from '@/lib/game-logic'
-import type { Position } from '@/lib/types'
+import type { Position } from '@/lib/game-logic'
 
 interface GameBoardProps {
     onScoreChange?: (score: number) => void
