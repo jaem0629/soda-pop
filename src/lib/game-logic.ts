@@ -162,4 +162,3 @@ export function calculateScore(matches: Position[][], combo: number): number {
 
     return score
 }
-

@@ -113,7 +113,16 @@ export default function GameBoard({
             onScoreChange?.(newScore)
             actions.setProcessing(false)
         },
-        [state.board, state.score, state.isProcessing, disabled, actions, animateSwap, animateMatchAndDrop, onScoreChange]
+        [
+            state.board,
+            state.score,
+            state.isProcessing,
+            disabled,
+            actions,
+            animateSwap,
+            animateMatchAndDrop,
+            onScoreChange,
+        ]
     )
 
     // 포인터 이벤트 핸들러

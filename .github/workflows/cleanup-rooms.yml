@@ -1,19 +1,19 @@
 name: Cleanup old rooms
 
 on:
-  schedule:
-    # 매시간 실행
-    - cron: '0 * * * *'
-  # 수동 실행 가능
-  workflow_dispatch:
+    schedule:
+        # 매시간 실행
+        - cron: '0 * * * *'
+    # 수동 실행 가능
+    workflow_dispatch:
 
 jobs:
-  cleanup:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Cleanup old rooms
-        run: |
-          curl -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/cleanup_old_rooms" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Content-Type: application/json"
+    cleanup:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Cleanup old rooms
+              run: |
+                  curl -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/cleanup_old_rooms" \
+                    -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+                    -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+                    -H "Content-Type: application/json"
