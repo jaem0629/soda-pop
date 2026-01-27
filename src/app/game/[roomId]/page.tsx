@@ -1,11 +1,19 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import GameBoard from '@/components/game-board'
 import { useRealtime } from '@/hooks/use-realtime'
-import { getRoom, updateScore, finishGame } from '@/lib/room'
-import type { Room } from '@/lib/room'
+import {
+    getRoom,
+    updateScore,
+    finishGame,
+    startGame,
+    calculateTimeLeft,
+    leaveRoom,
+    GAME_DURATION,
+    type Room,
+} from '@/lib/room'
 
 type PlayerInfo = {
     roomId: string
@@ -13,9 +21,6 @@ type PlayerInfo = {
     nickname: string
 }
 
-const GAME_DURATION = 60 // 60초
-
-// 플레이어 정보 로드 (컴포넌트 외부)
 function loadPlayerInfo(roomId: string): PlayerInfo | null {
     if (typeof window === 'undefined') return null
 
@@ -36,17 +41,20 @@ export default function GamePage() {
     const router = useRouter()
     const roomId = params.roomId as string
 
-    // 초기값을 함수로 설정
     const [playerInfo] = useState<PlayerInfo | null>(() =>
         loadPlayerInfo(roomId)
     )
     const [room, setRoom] = useState<Room | null>(null)
     const [opponentScore, setOpponentScore] = useState(0)
     const [myScore, setMyScore] = useState(0)
-    const [gameStatus, setGameStatus] = useState<
-        'waiting' | 'playing' | 'finished'
-    >('waiting')
     const [timeLeft, setTimeLeft] = useState(GAME_DURATION)
+    const [gameEnded, setGameEnded] = useState(false)
+
+    const scoreInitializedRef = useRef(false)
+    const gameEndedRef = useRef(false)
+    const [gameStartTime, setGameStartTime] = useState<number | null>(null) // 로컬 시간 기준
+
+    const gameStatus = room?.status ?? 'waiting'
 
     // 플레이어 정보 없으면 리다이렉트
     useEffect(() => {
@@ -55,26 +63,82 @@ export default function GamePage() {
         }
     }, [playerInfo, router])
 
-    // 방 정보 로드
+    // 방 정보 로드 (대기 중일 때만 폴링, 게임 중에는 초기 1회)
     useEffect(() => {
-        if (!roomId) return
+        if (!roomId || !playerInfo) return
 
         const loadRoom = async () => {
             const roomData = await getRoom(roomId)
-            if (roomData) {
-                setRoom(roomData)
-                if (roomData.status === 'playing') {
-                    setGameStatus('playing')
+            if (!roomData) {
+                router.push('/')
+                return
+            }
+
+            setRoom(roomData)
+
+            // 새로고침 시 점수 및 시간 복원 (scoreInitializedRef로 1회만 실행)
+            if (roomData.status === 'playing' && !scoreInitializedRef.current) {
+                scoreInitializedRef.current = true
+
+                const myDbScore =
+                    playerInfo.playerNumber === 1
+                        ? roomData.player1_score
+                        : roomData.player2_score
+                const opponentDbScore =
+                    playerInfo.playerNumber === 1
+                        ? roomData.player2_score
+                        : roomData.player1_score
+
+                setMyScore(myDbScore)
+                setOpponentScore(opponentDbScore)
+
+                // 서버 시간 기준 남은 시간 복원 (새로고침 시)
+                if (roomData.started_at) {
+                    const remaining = calculateTimeLeft(roomData.started_at)
+                    setTimeLeft(remaining)
+                    
+                    // 로컬 타이머 시작점 역산 (남은시간 기준)
+                    if (remaining > 0) {
+                        setGameStartTime(Date.now() - (GAME_DURATION - remaining) * 1000)
+                    }
                 }
+            }
+            
+            // 이미 종료된 게임이면 (DB status가 finished)
+            if (roomData.status === 'finished' && !gameEndedRef.current) {
+                gameEndedRef.current = true
+                setGameEnded(true)
             }
         }
 
         loadRoom()
 
-        // 방 상태 구독
-        const interval = setInterval(loadRoom, 2000)
-        return () => clearInterval(interval)
-    }, [roomId])
+        // 대기 중일 때만 폴링 (상대방 입장 감지)
+        if (gameStatus === 'waiting') {
+            const interval = setInterval(loadRoom, 2000)
+            return () => clearInterval(interval)
+        }
+    }, [roomId, router, playerInfo, gameStatus])
+
+    // 타이머 (게임 중에만) - 로컬 시간 기준
+    useEffect(() => {
+        if (gameStatus !== 'playing' || !gameStartTime || gameEndedRef.current) return
+
+        const timer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - gameStartTime) / 1000)
+            const remaining = Math.max(0, GAME_DURATION - elapsed)
+            setTimeLeft(remaining)
+
+            if (remaining <= 0 && !gameEndedRef.current) {
+                gameEndedRef.current = true
+                setGameEnded(true)
+                clearInterval(timer)
+                finishGame(roomId)
+            }
+        }, 100)
+
+        return () => clearInterval(timer)
+    }, [gameStatus, gameStartTime, roomId])
 
     // 실시간 이벤트 처리
     const handleRealtimeEvent = useCallback(
@@ -86,36 +150,47 @@ export default function GamePage() {
         }) => {
             switch (event.type) {
                 case 'player_joined':
-                    // 상대방 입장 - 방 정보 다시 로드
                     getRoom(roomId).then((roomData) => {
                         if (roomData) setRoom(roomData)
                     })
                     break
+
                 case 'game_start':
-                    setGameStatus('playing')
+                    gameEndedRef.current = false
+                    setGameEnded(false)
+                    setTimeLeft(GAME_DURATION)
+                    setGameStartTime(Date.now()) // 로컬 시간 기준!
+                    getRoom(roomId).then((roomData) => {
+                        if (roomData) setRoom(roomData)
+                    })
                     break
+
                 case 'score_update':
-                    if (
-                        event.playerNumber &&
-                        event.playerNumber !== playerInfo?.playerNumber
-                    ) {
+                    if (event.playerNumber !== playerInfo?.playerNumber) {
                         setOpponentScore(event.score ?? 0)
                     }
                     break
+
                 case 'game_end':
-                    setGameStatus('finished')
+                    gameEndedRef.current = true
+                    setGameEnded(true)
                     break
             }
         },
         [roomId, playerInfo?.playerNumber]
     )
 
-    const { isConnected, sendScore, sendGameStart, sendGameEnd, sendPlayerJoined } =
-        useRealtime({
-            roomId,
-            playerNumber: playerInfo?.playerNumber ?? 1,
-            onEvent: handleRealtimeEvent,
-        })
+    const {
+        isConnected,
+        sendScore,
+        sendGameStart,
+        sendGameEnd,
+        sendPlayerJoined,
+    } = useRealtime({
+        roomId,
+        playerNumber: playerInfo?.playerNumber ?? 1,
+        onEvent: handleRealtimeEvent,
+    })
 
     // 플레이어2 입장 시 알림
     useEffect(() => {
@@ -125,32 +200,20 @@ export default function GamePage() {
     }, [playerInfo, isConnected, sendPlayerJoined])
 
     // 게임 시작 (플레이어1만)
-    const handleStartGame = () => {
-        if (playerInfo?.playerNumber === 1 && room?.player2_name) {
-            setGameStatus('playing')
+    const handleStartGame = async () => {
+        if (playerInfo?.playerNumber !== 1 || !room?.player2_name) return
+
+        gameEndedRef.current = false
+        setGameEnded(false)
+        setTimeLeft(GAME_DURATION)
+
+        const updatedRoom = await startGame(roomId)
+        if (updatedRoom) {
+            setRoom(updatedRoom)
+            setGameStartTime(Date.now()) // 로컬 시간 기준!
             sendGameStart()
         }
     }
-
-    // 타이머
-    useEffect(() => {
-        if (gameStatus !== 'playing') return
-
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer)
-                    setGameStatus('finished')
-                    sendGameEnd()
-                    finishGame(roomId)
-                    return 0
-                }
-                return prev - 1
-            })
-        }, 1000)
-
-        return () => clearInterval(timer)
-    }, [gameStatus, roomId, sendGameEnd])
 
     // 점수 변경 핸들러
     const handleScoreChange = useCallback(
@@ -164,6 +227,25 @@ export default function GamePage() {
         [roomId, playerInfo, sendScore]
     )
 
+    // 게임 종료 시 상대방에게 알림
+    useEffect(() => {
+        if (gameEnded) {
+            sendGameEnd()
+        }
+    }, [gameEnded, sendGameEnd])
+
+    // 페이지 떠날 때 방 정리
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (room?.status === 'waiting' && playerInfo?.playerNumber === 1) {
+                leaveRoom(roomId)
+            }
+        }
+
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [room?.status, playerInfo?.playerNumber, roomId])
+
     // 로딩 중
     if (!playerInfo || !room) {
         return (
@@ -175,50 +257,37 @@ export default function GamePage() {
 
     const opponentName =
         playerInfo.playerNumber === 1 ? room.player2_name : room.player1_name
+    const isFinished = gameStatus === 'finished' || gameEnded
 
     return (
         <div className='flex min-h-screen flex-col items-center bg-[#0f0f23] p-4'>
             {/* 헤더 */}
             <div className='mb-4 w-full max-w-2xl'>
                 <div className='flex items-center justify-between rounded-xl bg-[#1a1a2e] p-4'>
-                    {/* 내 정보 */}
                     <div className='text-center'>
                         <p className='text-sm text-gray-400'>나</p>
-                        <p className='font-bold text-white'>
-                            {playerInfo.nickname}
-                        </p>
-                        <p className='text-2xl font-bold text-yellow-400'>
-                            {myScore}
-                        </p>
+                        <p className='font-bold text-white'>{playerInfo.nickname}</p>
+                        <p className='text-2xl font-bold text-yellow-400'>{myScore}</p>
                     </div>
 
-                    {/* 타이머 */}
                     <div className='text-center'>
                         {gameStatus === 'waiting' && (
                             <p className='text-gray-400'>대기 중</p>
                         )}
-                        {gameStatus === 'playing' && (
-                            <p
-                                className={`text-4xl font-bold ${timeLeft <= 10 ? 'text-red-500' : 'text-white'}`}>
+                        {gameStatus === 'playing' && !isFinished && (
+                            <p className={`text-4xl font-bold ${timeLeft <= 10 ? 'text-red-500' : 'text-white'}`}>
                                 {timeLeft}
                             </p>
                         )}
-                        {gameStatus === 'finished' && (
-                            <p className='text-2xl font-bold text-purple-400'>
-                                종료!
-                            </p>
+                        {isFinished && (
+                            <p className='text-2xl font-bold text-purple-400'>종료!</p>
                         )}
                     </div>
 
-                    {/* 상대 정보 */}
                     <div className='text-center'>
                         <p className='text-sm text-gray-400'>상대</p>
-                        <p className='font-bold text-white'>
-                            {opponentName ?? '???'}
-                        </p>
-                        <p className='text-2xl font-bold text-pink-400'>
-                            {opponentScore}
-                        </p>
+                        <p className='font-bold text-white'>{opponentName ?? '???'}</p>
+                        <p className='text-2xl font-bold text-pink-400'>{opponentScore}</p>
                     </div>
                 </div>
             </div>
@@ -230,9 +299,7 @@ export default function GamePage() {
                     <p className='text-4xl font-bold tracking-widest text-purple-400'>
                         {room.code}
                     </p>
-                    <p className='text-gray-400'>
-                        이 코드를 상대방에게 공유하세요
-                    </p>
+                    <p className='text-gray-400'>이 코드를 상대방에게 공유하세요</p>
 
                     {!opponentName && (
                         <div className='mt-4 flex items-center gap-2 text-gray-400'>
@@ -250,23 +317,22 @@ export default function GamePage() {
                     )}
 
                     {opponentName && playerInfo.playerNumber === 2 && (
-                        <p className='mt-4 text-gray-400'>
-                            방장이 게임을 시작합니다...
-                        </p>
+                        <p className='mt-4 text-gray-400'>방장이 게임을 시작합니다...</p>
                     )}
                 </div>
             )}
 
             {/* 게임 화면 */}
-            {gameStatus === 'playing' && (
+            {gameStatus === 'playing' && !isFinished && (
                 <GameBoard
                     onScoreChange={handleScoreChange}
                     disabled={false}
+                    initialScore={myScore}
                 />
             )}
 
             {/* 결과 화면 */}
-            {gameStatus === 'finished' && (
+            {isFinished && (
                 <div className='flex flex-col items-center gap-4 rounded-2xl bg-[#1a1a2e] p-8'>
                     <p className='text-3xl font-bold text-white'>
                         {myScore > opponentScore
@@ -278,21 +344,13 @@ export default function GamePage() {
 
                     <div className='flex gap-8 text-center'>
                         <div>
-                            <p className='text-gray-400'>
-                                {playerInfo.nickname}
-                            </p>
-                            <p className='text-3xl font-bold text-yellow-400'>
-                                {myScore}
-                            </p>
+                            <p className='text-gray-400'>{playerInfo.nickname}</p>
+                            <p className='text-3xl font-bold text-yellow-400'>{myScore}</p>
                         </div>
-                        <div className='text-3xl font-bold text-gray-600'>
-                            vs
-                        </div>
+                        <div className='text-3xl font-bold text-gray-600'>vs</div>
                         <div>
                             <p className='text-gray-400'>{opponentName}</p>
-                            <p className='text-3xl font-bold text-pink-400'>
-                                {opponentScore}
-                            </p>
+                            <p className='text-3xl font-bold text-pink-400'>{opponentScore}</p>
                         </div>
                     </div>
 
@@ -306,9 +364,7 @@ export default function GamePage() {
 
             {/* 연결 상태 */}
             <div className='fixed bottom-4 right-4'>
-                <div
-                    className={`h-3 w-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}
-                />
+                <div className={`h-3 w-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
             </div>
         </div>
     )

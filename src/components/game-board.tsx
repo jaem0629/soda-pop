@@ -14,20 +14,23 @@ import {
     swapPieces,
     findAllMatches,
     calculateScore,
+    isAdjacent,
 } from '@/lib/game-logic'
 import type { Position } from '@/lib/game-logic'
 
 interface GameBoardProps {
     onScoreChange?: (score: number) => void
     disabled?: boolean
+    initialScore?: number
 }
 
 export default function GameBoard({
     onScoreChange,
     disabled = false,
+    initialScore = 0,
 }: GameBoardProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
-    const { state, actions } = useGameReducer()
+    const { state, actions } = useGameReducer(initialScore)
     const { animation, animateSwap, animateMatchAndDrop, resetAnimation } =
         useGameAnimation()
 
@@ -54,14 +57,7 @@ export default function GameBoard({
         async (pos1: Position, pos2: Position) => {
             if (disabled || state.isProcessing) return
 
-            // 인접 검사
-            const rowDiff = Math.abs(pos1.row - pos2.row)
-            const colDiff = Math.abs(pos1.col - pos2.col)
-            const isAdjacent =
-                (rowDiff === 1 && colDiff === 0) ||
-                (rowDiff === 0 && colDiff === 1)
-
-            if (!isAdjacent) {
+            if (!isAdjacent(pos1, pos2)) {
                 actions.select(null)
                 return
             }
@@ -112,17 +108,12 @@ export default function GameBoard({
                 matches = findAllMatches(currentBoard)
             }
 
-            onScoreChange?.(state.score + totalScore)
+            // 최신 점수 계산 (state.score는 stale할 수 있음)
+            const newScore = state.score + totalScore
+            onScoreChange?.(newScore)
             actions.setProcessing(false)
         },
-        [
-            state,
-            disabled,
-            actions,
-            animateSwap,
-            animateMatchAndDrop,
-            onScoreChange,
-        ]
+        [state.board, state.score, state.isProcessing, disabled, actions, animateSwap, animateMatchAndDrop, onScoreChange]
     )
 
     // 포인터 이벤트 핸들러

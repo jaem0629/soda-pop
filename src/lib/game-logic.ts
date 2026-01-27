@@ -56,7 +56,7 @@ export function createBoard(): Board {
 }
 
 // 랜덤 퍼즐 조각
-function getRandomPiece(): PieceType {
+export function getRandomPiece(): PieceType {
     return PIECE_TYPES[Math.floor(Math.random() * PIECE_TYPES.length)]
 }
 
@@ -138,50 +138,6 @@ export function findAllMatches(board: Board): Position[][] {
     return matches
 }
 
-// 매칭된 조각 제거 (null로 표시)
-export function removeMatches(
-    board: Board,
-    matches: Position[][]
-): (PieceType | null)[][] {
-    const newBoard: (PieceType | null)[][] = board.map((row) => [...row])
-
-    for (const match of matches) {
-        for (const pos of match) {
-            newBoard[pos.row][pos.col] = null
-        }
-    }
-
-    return newBoard
-}
-
-// 빈 공간 채우기 (위에서 떨어뜨리기)
-export function dropPieces(board: (PieceType | null)[][]): Board {
-    const newBoard: Board = board.map((row) => [...row]) as Board
-
-    for (let col = 0; col < BOARD_SIZE; col++) {
-        // 아래에서 위로 빈 공간 찾기
-        let emptyRow = BOARD_SIZE - 1
-
-        for (let row = BOARD_SIZE - 1; row >= 0; row--) {
-            if (newBoard[row][col] !== null) {
-                // 조각이 있으면 아래로 이동
-                if (row !== emptyRow) {
-                    newBoard[emptyRow][col] = newBoard[row][col]
-                    newBoard[row][col] = null as unknown as PieceType
-                }
-                emptyRow--
-            }
-        }
-
-        // 위쪽 빈 공간에 새 조각 채우기
-        for (let row = emptyRow; row >= 0; row--) {
-            newBoard[row][col] = getRandomPiece()
-        }
-    }
-
-    return newBoard
-}
-
 // 점수 계산
 export function calculateScore(matches: Position[][], combo: number): number {
     let score = 0
@@ -207,73 +163,3 @@ export function calculateScore(matches: Position[][], combo: number): number {
     return score
 }
 
-// 스왑 후 전체 처리 (매칭 → 제거 → 드롭 → 반복)
-export function processMove(
-    board: Board,
-    pos1: Position,
-    pos2: Position
-): { newBoard: Board; totalScore: number; isValidMove: boolean } {
-    // 인접하지 않으면 무효
-    if (!isAdjacent(pos1, pos2)) {
-        return { newBoard: board, totalScore: 0, isValidMove: false }
-    }
-
-    // 스왑
-    let currentBoard = swapPieces(board, pos1, pos2)
-
-    // 매칭 확인
-    let matches = findAllMatches(currentBoard)
-
-    // 매칭 없으면 스왑 취소
-    if (matches.length === 0) {
-        return { newBoard: board, totalScore: 0, isValidMove: false }
-    }
-
-    let totalScore = 0
-    let combo = 0
-
-    // 연쇄 처리
-    while (matches.length > 0) {
-        // 점수 계산
-        totalScore += calculateScore(matches, combo)
-        combo++
-
-        // 매칭 제거
-        const boardWithNulls = removeMatches(currentBoard, matches)
-
-        // 드롭 + 새 조각
-        currentBoard = dropPieces(boardWithNulls)
-
-        // 새 매칭 확인
-        matches = findAllMatches(currentBoard)
-    }
-
-    return { newBoard: currentBoard, totalScore, isValidMove: true }
-}
-
-// 가능한 이동이 있는지 확인 (힌트용)
-export function hasValidMoves(board: Board): boolean {
-    for (let row = 0; row < BOARD_SIZE; row++) {
-        for (let col = 0; col < BOARD_SIZE; col++) {
-            // 오른쪽과 스왑
-            if (col < BOARD_SIZE - 1) {
-                const swapped = swapPieces(
-                    board,
-                    { row, col },
-                    { row, col: col + 1 }
-                )
-                if (findAllMatches(swapped).length > 0) return true
-            }
-            // 아래와 스왑
-            if (row < BOARD_SIZE - 1) {
-                const swapped = swapPieces(
-                    board,
-                    { row, col },
-                    { row: row + 1, col }
-                )
-                if (findAllMatches(swapped).length > 0) return true
-            }
-        }
-    }
-    return false
-}

@@ -1,16 +1,14 @@
-import { useReducer, useCallback } from 'react'
+import { useReducer, useCallback, useRef } from 'react'
 import type { Board, Position, GameState, PieceType } from '@/lib/game-logic'
 import {
     createInitialGameState,
-    swapPieces,
-    findAllMatches,
-    calculateScore,
+    getRandomPiece,
     BOARD_SIZE,
 } from '@/lib/game-logic'
 
 // 액션 타입
 type GameAction =
-    | { type: 'RESET' }
+    | { type: 'RESET'; initialScore: number }
     | { type: 'SET_BOARD'; board: Board }
     | { type: 'ADD_SCORE'; score: number }
     | { type: 'SET_ANIMATING'; isAnimating: boolean }
@@ -30,8 +28,9 @@ export type ExtendedGameState = GameState & {
 }
 
 // 초기 상태
-const createInitialState = (): ExtendedGameState => ({
+const createInitialState = (initialScore: number = 0): ExtendedGameState => ({
     ...createInitialGameState(),
+    score: initialScore,
     selectedPos: null,
     isDragging: false,
     dragStart: null,
@@ -46,7 +45,7 @@ function gameReducer(
 ): ExtendedGameState {
     switch (action.type) {
         case 'RESET':
-            return createInitialState()
+            return createInitialState(action.initialScore)
 
         case 'SET_BOARD':
             return { ...state, board: action.board }
@@ -94,11 +93,6 @@ export type DropInfo = {
     fromRow: number
     toRow: number
     piece: PieceType
-}
-
-// 랜덤 조각 생성
-const getRandomPiece = (): PieceType => {
-    return Math.floor(Math.random() * 6) as PieceType
 }
 
 // 드롭 정보 계산
@@ -150,11 +144,20 @@ export function calculateDrops(
 }
 
 // 커스텀 훅
-export function useGameReducer() {
-    const [state, dispatch] = useReducer(gameReducer, null, createInitialState)
+export function useGameReducer(initialScore: number = 0) {
+    const initialScoreRef = useRef(initialScore)
+
+    const [state, dispatch] = useReducer(
+        gameReducer,
+        initialScore,
+        (score) => createInitialState(score)
+    )
 
     const actions = {
-        reset: useCallback(() => dispatch({ type: 'RESET' }), []),
+        reset: useCallback(
+            () => dispatch({ type: 'RESET', initialScore: initialScoreRef.current }),
+            []
+        ),
         setBoard: useCallback(
             (board: Board) => dispatch({ type: 'SET_BOARD', board }),
             []
@@ -189,48 +192,5 @@ export function useGameReducer() {
         ),
     }
 
-    // 이동 유효성 검사
-    const isValidMove = useCallback(
-        (pos1: Position, pos2: Position): boolean => {
-            const rowDiff = Math.abs(pos1.row - pos2.row)
-            const colDiff = Math.abs(pos1.col - pos2.col)
-            return (
-                (rowDiff === 1 && colDiff === 0) ||
-                (rowDiff === 0 && colDiff === 1)
-            )
-        },
-        []
-    )
-
-    // 스왑 실행
-    const executeSwap = useCallback(
-        (pos1: Position, pos2: Position) => {
-            const newBoard = swapPieces(state.board, pos1, pos2)
-            dispatch({ type: 'SET_BOARD', board: newBoard })
-            return newBoard
-        },
-        [state.board]
-    )
-
-    // 매칭 확인
-    const checkMatches = useCallback((board: Board) => {
-        return findAllMatches(board)
-    }, [])
-
-    // 점수 계산
-    const getScore = useCallback((matches: Position[][], combo: number) => {
-        return calculateScore(matches, combo)
-    }, [])
-
-    return {
-        state,
-        actions,
-        helpers: {
-            isValidMove,
-            executeSwap,
-            checkMatches,
-            getScore,
-            swapPieces,
-        },
-    }
+    return { state, actions }
 }
