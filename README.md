@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Soda Pop
+
+Real-time 2-player puzzle battle game
+
+## Demo
+
+[https://soda-pop-kappa.vercel.app](https://soda-pop-kappa.vercel.app)
+
+## Features
+
+- **Real-time Multiplayer** - Battle with friends in real-time
+- **Match-3 Puzzle** - Connect 3 or more blocks to pop them
+- **60-Second Time Attack** - Compete for the highest score
+- **Room Code System** - Play with friends using 6-digit codes
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, React, TypeScript
+- **Styling**: Tailwind CSS v4
+- **Backend**: Supabase (Database + Realtime)
+- **Rendering**: HTML5 Canvas
+- **Deployment**: Vercel
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- pnpm
+- Supabase project
+
+### Installation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Install dependencies
+pnpm install
+
+# Set up environment variables
+cp .env.local.example .env.local
+# Add your Supabase URL and Key to .env.local
+
+# Run development server
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How to Play
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Enter your nickname
+2. **Create a room** or **Join a room** (6-digit code)
+3. Wait for opponent to join, then start the game
+4. Match 3 or more same-colored blocks to pop them
+5. Get the higher score within 60 seconds to win!
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## License
 
-## Learn More
+Copyright (c) 2026 Jaem. All rights reserved.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This source code is provided for reference only. 
+Unauthorized copying, modification, or distribution is prohibited without explicit permission.
