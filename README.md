@@ -55,5 +55,5 @@ pnpm dev
 
 Copyright (c) 2026 Jaem. All rights reserved.
 
-This source code is provided for reference only. 
+This source code is provided for reference only.
 Unauthorized copying, modification, or distribution is prohibited without explicit permission.

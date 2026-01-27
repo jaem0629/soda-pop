@@ -73,8 +73,8 @@ export default function Home() {
 
     return (
         <div className='flex min-h-screen flex-col items-center justify-center bg-[#0f0f23] p-8'>
-            <h1 className='mb-4 text-5xl font-bold text-white'>🧩 퍼즐 배틀</h1>
-            <p className='mb-8 text-gray-400'>실시간 2인 대전 Match-3 퍼즐</p>
+            <h1 className='mb-4 text-5xl font-bold text-white'>Soda Pop</h1>
+            <p className='mb-8 text-gray-400'>Real-time 2P Puzzle Battle</p>
 
             <div className='w-full max-w-sm rounded-2xl bg-[#1a1a2e] p-6 shadow-2xl'>
                 {mode === 'select' && (
