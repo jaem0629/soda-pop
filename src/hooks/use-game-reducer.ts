@@ -147,15 +147,17 @@ export function calculateDrops(
 export function useGameReducer(initialScore: number = 0) {
     const initialScoreRef = useRef(initialScore)
 
-    const [state, dispatch] = useReducer(
-        gameReducer,
-        initialScore,
-        (score) => createInitialState(score)
+    const [state, dispatch] = useReducer(gameReducer, initialScore, (score) =>
+        createInitialState(score)
     )
 
     const actions = {
         reset: useCallback(
-            () => dispatch({ type: 'RESET', initialScore: initialScoreRef.current }),
+            () =>
+                dispatch({
+                    type: 'RESET',
+                    initialScore: initialScoreRef.current,
+                }),
             []
         ),
         setBoard: useCallback(

@@ -141,9 +141,10 @@ export function calculateTimeLeft(startedAt: string | null): number {
 
     // DB 타임스탬프를 UTC로 파싱 (Supabase는 UTC로 저장)
     // "2026-01-27 13:03:07.804" → "2026-01-27T13:03:07.804Z"
-    const utcString = startedAt.replace(' ', 'T') + (startedAt.includes('Z') ? '' : 'Z')
+    const utcString =
+        startedAt.replace(' ', 'T') + (startedAt.includes('Z') ? '' : 'Z')
     const startTime = new Date(utcString).getTime()
-    
+
     if (isNaN(startTime)) {
         console.error('Invalid startedAt timestamp:', startedAt)
         return GAME_DURATION

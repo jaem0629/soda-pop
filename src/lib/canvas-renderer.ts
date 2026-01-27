@@ -1,7 +1,7 @@
-import type { Board, Position } from './game-logic'
-import { BOARD_SIZE, PIECE_COLORS, PIECE_SHAPES } from './game-logic'
 import type { AnimationState } from '@/hooks/use-game-animation'
 import { easing } from '@/hooks/use-game-animation'
+import type { Board, Position } from './game-logic'
+import { BOARD_SIZE, PIECE_COLORS, PIECE_SHAPES } from './game-logic'
 
 // 렌더링 상수
 export const CELL_SIZE = 64

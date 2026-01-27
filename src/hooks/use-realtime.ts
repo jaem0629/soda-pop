@@ -16,7 +16,11 @@ type UseRealtimeProps = {
     onEvent: (event: GameEvent) => void
 }
 
-export function useRealtime({ roomId, playerNumber, onEvent }: UseRealtimeProps) {
+export function useRealtime({
+    roomId,
+    playerNumber,
+    onEvent,
+}: UseRealtimeProps) {
     const [isConnected, setIsConnected] = useState(false)
     const channelRef = useRef<RealtimeChannel | null>(null)
 
@@ -48,18 +52,15 @@ export function useRealtime({ roomId, playerNumber, onEvent }: UseRealtimeProps)
     }, [roomId, onEvent])
 
     // 이벤트 브로드캐스트
-    const broadcast = useCallback(
-        (event: GameEvent) => {
-            if (!channelRef.current) return
+    const broadcast = useCallback((event: GameEvent) => {
+        if (!channelRef.current) return
 
-            channelRef.current.send({
-                type: 'broadcast',
-                event: 'game_event',
-                payload: event,
-            })
-        },
-        []
-    )
+        channelRef.current.send({
+            type: 'broadcast',
+            event: 'game_event',
+            payload: event,
+        })
+    }, [])
 
     // 점수 전송
     const sendScore = useCallback(

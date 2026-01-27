@@ -96,14 +96,16 @@ export default function GamePage() {
                 if (roomData.started_at) {
                     const remaining = calculateTimeLeft(roomData.started_at)
                     setTimeLeft(remaining)
-                    
+
                     // 로컬 타이머 시작점 역산 (남은시간 기준)
                     if (remaining > 0) {
-                        setGameStartTime(Date.now() - (GAME_DURATION - remaining) * 1000)
+                        setGameStartTime(
+                            Date.now() - (GAME_DURATION - remaining) * 1000
+                        )
                     }
                 }
             }
-            
+
             // 이미 종료된 게임이면 (DB status가 finished)
             if (roomData.status === 'finished' && !gameEndedRef.current) {
                 gameEndedRef.current = true
@@ -122,7 +124,8 @@ export default function GamePage() {
 
     // 타이머 (게임 중에만) - 로컬 시간 기준
     useEffect(() => {
-        if (gameStatus !== 'playing' || !gameStartTime || gameEndedRef.current) return
+        if (gameStatus !== 'playing' || !gameStartTime || gameEndedRef.current)
+            return
 
         const timer = setInterval(() => {
             const elapsed = Math.floor((Date.now() - gameStartTime) / 1000)
@@ -243,7 +246,8 @@ export default function GamePage() {
         }
 
         window.addEventListener('beforeunload', handleBeforeUnload)
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+        return () =>
+            window.removeEventListener('beforeunload', handleBeforeUnload)
     }, [room?.status, playerInfo?.playerNumber, roomId])
 
     // 로딩 중
@@ -266,8 +270,12 @@ export default function GamePage() {
                 <div className='flex items-center justify-between rounded-xl bg-[#1a1a2e] p-4'>
                     <div className='text-center'>
                         <p className='text-sm text-gray-400'>나</p>
-                        <p className='font-bold text-white'>{playerInfo.nickname}</p>
-                        <p className='text-2xl font-bold text-yellow-400'>{myScore}</p>
+                        <p className='font-bold text-white'>
+                            {playerInfo.nickname}
+                        </p>
+                        <p className='text-2xl font-bold text-yellow-400'>
+                            {myScore}
+                        </p>
                     </div>
 
                     <div className='text-center'>
@@ -275,19 +283,26 @@ export default function GamePage() {
                             <p className='text-gray-400'>대기 중</p>
                         )}
                         {gameStatus === 'playing' && !isFinished && (
-                            <p className={`text-4xl font-bold ${timeLeft <= 10 ? 'text-red-500' : 'text-white'}`}>
+                            <p
+                                className={`text-4xl font-bold ${timeLeft <= 10 ? 'text-red-500' : 'text-white'}`}>
                                 {timeLeft}
                             </p>
                         )}
                         {isFinished && (
-                            <p className='text-2xl font-bold text-purple-400'>종료!</p>
+                            <p className='text-2xl font-bold text-purple-400'>
+                                종료!
+                            </p>
                         )}
                     </div>
 
                     <div className='text-center'>
                         <p className='text-sm text-gray-400'>상대</p>
-                        <p className='font-bold text-white'>{opponentName ?? '???'}</p>
-                        <p className='text-2xl font-bold text-pink-400'>{opponentScore}</p>
+                        <p className='font-bold text-white'>
+                            {opponentName ?? '???'}
+                        </p>
+                        <p className='text-2xl font-bold text-pink-400'>
+                            {opponentScore}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -299,7 +314,9 @@ export default function GamePage() {
                     <p className='text-4xl font-bold tracking-widest text-purple-400'>
                         {room.code}
                     </p>
-                    <p className='text-gray-400'>이 코드를 상대방에게 공유하세요</p>
+                    <p className='text-gray-400'>
+                        이 코드를 상대방에게 공유하세요
+                    </p>
 
                     {!opponentName && (
                         <div className='mt-4 flex items-center gap-2 text-gray-400'>
@@ -317,7 +334,9 @@ export default function GamePage() {
                     )}
 
                     {opponentName && playerInfo.playerNumber === 2 && (
-                        <p className='mt-4 text-gray-400'>방장이 게임을 시작합니다...</p>
+                        <p className='mt-4 text-gray-400'>
+                            방장이 게임을 시작합니다...
+                        </p>
                     )}
                 </div>
             )}
@@ -344,13 +363,21 @@ export default function GamePage() {
 
                     <div className='flex gap-8 text-center'>
                         <div>
-                            <p className='text-gray-400'>{playerInfo.nickname}</p>
-                            <p className='text-3xl font-bold text-yellow-400'>{myScore}</p>
+                            <p className='text-gray-400'>
+                                {playerInfo.nickname}
+                            </p>
+                            <p className='text-3xl font-bold text-yellow-400'>
+                                {myScore}
+                            </p>
                         </div>
-                        <div className='text-3xl font-bold text-gray-600'>vs</div>
+                        <div className='text-3xl font-bold text-gray-600'>
+                            vs
+                        </div>
                         <div>
                             <p className='text-gray-400'>{opponentName}</p>
-                            <p className='text-3xl font-bold text-pink-400'>{opponentScore}</p>
+                            <p className='text-3xl font-bold text-pink-400'>
+                                {opponentScore}
+                            </p>
                         </div>
                     </div>
 
@@ -363,8 +390,10 @@ export default function GamePage() {
             )}
 
             {/* 연결 상태 */}
-            <div className='fixed bottom-4 right-4'>
-                <div className={`h-3 w-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <div className='fixed right-4 bottom-4'>
+                <div
+                    className={`h-3 w-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}
+                />
             </div>
         </div>
     )
