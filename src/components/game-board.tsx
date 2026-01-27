@@ -31,8 +31,7 @@ export default function GameBoard({
 }: GameBoardProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const { state, actions } = useGameReducer(initialScore)
-    const { animation, animateSwap, animateMatchAndDrop, resetAnimation } =
-        useGameAnimation()
+    const { animation, animateSwap, animateMatchAndDrop } = useGameAnimation()
 
     // Canvas 렌더링
     useEffect(() => {
@@ -244,13 +243,6 @@ export default function GameBoard({
         [state, actions, handleMove]
     )
 
-    // 게임 리셋
-    const resetGame = useCallback(() => {
-        actions.reset()
-        resetAnimation()
-        onScoreChange?.(0)
-    }, [actions, resetAnimation, onScoreChange])
-
     return (
         <div className='flex flex-col items-center gap-4'>
             <div className='text-2xl font-bold text-white'>
@@ -273,13 +265,6 @@ export default function GameBoard({
                 onPointerCancel={handlePointerUp}
                 onClick={handleClick}
             />
-
-            <button
-                onClick={resetGame}
-                disabled={state.isProcessing}
-                className='rounded-xl bg-linear-to-r from-purple-500 to-pink-500 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:from-purple-600 hover:to-pink-600 disabled:opacity-50'>
-                다시 시작
-            </button>
         </div>
     )
 }

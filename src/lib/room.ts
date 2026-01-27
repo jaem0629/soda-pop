@@ -12,6 +12,7 @@ export type Room = {
     status: 'waiting' | 'playing' | 'finished'
     started_at: string | null
     created_at: string
+    expired_at: string | null
 }
 
 // 게임 시간 (초)
@@ -193,12 +194,15 @@ export async function finishGame(roomId: string): Promise<boolean> {
     return true
 }
 
-// 방 삭제 (나가기)
+// 방 만료 (나가기 - 소프트 삭제)
 export async function leaveRoom(roomId: string): Promise<boolean> {
-    const { error } = await supabase.from('rooms').delete().eq('id', roomId)
+    const { error } = await supabase
+        .from('rooms')
+        .update({ expired_at: new Date().toISOString() })
+        .eq('id', roomId)
 
     if (error) {
-        console.error('방 삭제 실패:', error)
+        console.error('방 만료 실패:', error)
         return false
     }
 
