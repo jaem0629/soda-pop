@@ -4,7 +4,7 @@ Real-time 2-player puzzle battle game
 
 ## Demo
 
-[https://soda-pop-kappa.vercel.app](https://soda-pop-kappa.vercel.app)
+[https://soda-pop-game.vercel.app](https://soda-pop-game.vercel.app)
 
 ## Features
 
