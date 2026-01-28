@@ -2,6 +2,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card'
 import { createMatch, joinMatch } from '@/lib/match'
 
 export default function Home() {
@@ -73,100 +82,127 @@ export default function Home() {
     }
 
     return (
-        <div className='flex min-h-screen flex-col items-center justify-center bg-[#0f0f23] p-8'>
-            <h1 className='mb-4 text-5xl font-bold text-white'>🥤 Soda Pop</h1>
-            <p className='mb-8 text-gray-400'>Real-time 2P Puzzle Battle</p>
+        <div className='flex min-h-svh flex-col items-center justify-center p-4'>
+            <div className='mb-8 text-center'>
+                <h1 className='mb-2 text-5xl font-bold tracking-tight'>
+                    🥤 Soda Pop
+                </h1>
+                <p className='text-muted-foreground'>
+                    Real-time 2P Puzzle Battle
+                </p>
+            </div>
 
-            <div className='w-full max-w-sm rounded-2xl bg-[#1a1a2e] p-6 shadow-2xl'>
+            <Card className='w-full max-w-sm'>
                 {mode === 'select' && (
-                    <div className='flex flex-col gap-4'>
-                        <input
-                            type='text'
-                            placeholder='닉네임 입력'
-                            value={nickname}
-                            onChange={(e) => setNickname(e.target.value)}
-                            className='w-full rounded-xl bg-[#252545] px-4 py-3 text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-purple-500'
-                            maxLength={12}
-                        />
-
-                        <button
-                            onClick={() => setMode('create')}
-                            disabled={!nickname.trim()}
-                            className='w-full rounded-xl bg-linear-to-r from-purple-500 to-pink-500 py-4 font-bold text-white transition-all hover:from-purple-600 hover:to-pink-600 disabled:opacity-50'>
-                            방 만들기
-                        </button>
-
-                        <button
-                            onClick={() => setMode('join')}
-                            disabled={!nickname.trim()}
-                            className='w-full rounded-xl border-2 border-purple-500 py-4 font-bold text-purple-400 transition-all hover:bg-purple-500/10 disabled:opacity-50'>
-                            방 참가하기
-                        </button>
-                    </div>
+                    <>
+                        <CardHeader>
+                            <CardTitle>게임 시작</CardTitle>
+                            <CardDescription>
+                                닉네임을 입력하고 방을 만들거나 참가하세요
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className='flex flex-col gap-4'>
+                            <Input
+                                type='text'
+                                placeholder='닉네임 입력'
+                                value={nickname}
+                                onChange={(e) => setNickname(e.target.value)}
+                                maxLength={12}
+                            />
+                            <Button
+                                onClick={() => setMode('create')}
+                                disabled={!nickname.trim()}
+                                className='w-full'
+                                size='lg'>
+                                방 만들기
+                            </Button>
+                            <Button
+                                onClick={() => setMode('join')}
+                                disabled={!nickname.trim()}
+                                variant='outline'
+                                className='w-full'
+                                size='lg'>
+                                방 참가하기
+                            </Button>
+                        </CardContent>
+                    </>
                 )}
 
                 {mode === 'create' && (
-                    <div className='flex flex-col gap-4'>
-                        <p className='text-center text-gray-400'>
-                            <span className='text-white'>{nickname}</span>
-                            님으로 방을 만듭니다
-                        </p>
-
-                        <button
-                            onClick={handleCreateRoom}
-                            disabled={isLoading}
-                            className='w-full rounded-xl bg-linear-to-r from-purple-500 to-pink-500 py-4 font-bold text-white transition-all hover:from-purple-600 hover:to-pink-600 disabled:opacity-50'>
-                            {isLoading ? '생성 중...' : '방 생성하기'}
-                        </button>
-
-                        <button
-                            onClick={() => setMode('select')}
-                            disabled={isLoading}
-                            className='text-gray-400 hover:text-white'>
-                            ← 돌아가기
-                        </button>
-                    </div>
+                    <>
+                        <CardHeader>
+                            <CardTitle>방 만들기</CardTitle>
+                            <CardDescription>
+                                <span className='text-foreground font-medium'>
+                                    {nickname}
+                                </span>
+                                님으로 방을 만듭니다
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className='flex flex-col gap-4'>
+                            <Button
+                                onClick={handleCreateRoom}
+                                disabled={isLoading}
+                                className='w-full'
+                                size='lg'>
+                                {isLoading ? '생성 중...' : '방 생성하기'}
+                            </Button>
+                            <Button
+                                onClick={() => setMode('select')}
+                                disabled={isLoading}
+                                variant='ghost'
+                                className='w-full'>
+                                ← 돌아가기
+                            </Button>
+                        </CardContent>
+                    </>
                 )}
 
                 {mode === 'join' && (
-                    <div className='flex flex-col gap-4'>
-                        <p className='text-center text-gray-400'>
-                            방 코드를 입력해주세요
-                        </p>
-
-                        <input
-                            type='text'
-                            placeholder='방 코드 (6자리)'
-                            value={roomCode}
-                            onChange={(e) =>
-                                setRoomCode(e.target.value.toUpperCase())
-                            }
-                            className='w-full rounded-xl bg-[#252545] px-4 py-3 text-center text-2xl font-bold tracking-widest text-white placeholder-gray-500 outline-none focus:ring-2 focus:ring-purple-500'
-                            maxLength={6}
-                        />
-
-                        <button
-                            onClick={handleJoinRoom}
-                            disabled={isLoading || roomCode.length !== 6}
-                            className='w-full rounded-xl bg-linear-to-r from-purple-500 to-pink-500 py-4 font-bold text-white transition-all hover:from-purple-600 hover:to-pink-600 disabled:opacity-50'>
-                            {isLoading ? '참가 중...' : '참가하기'}
-                        </button>
-
-                        <button
-                            onClick={() => setMode('select')}
-                            disabled={isLoading}
-                            className='text-gray-400 hover:text-white'>
-                            ← 돌아가기
-                        </button>
-                    </div>
+                    <>
+                        <CardHeader>
+                            <CardTitle>방 참가하기</CardTitle>
+                            <CardDescription>
+                                방 코드를 입력해주세요
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className='flex flex-col gap-4'>
+                            <Input
+                                type='text'
+                                placeholder='방 코드 (6자리)'
+                                value={roomCode}
+                                onChange={(e) =>
+                                    setRoomCode(e.target.value.toUpperCase())
+                                }
+                                className='text-center text-2xl font-bold tracking-widest'
+                                maxLength={6}
+                            />
+                            <Button
+                                onClick={handleJoinRoom}
+                                disabled={isLoading || roomCode.length !== 6}
+                                className='w-full'
+                                size='lg'>
+                                {isLoading ? '참가 중...' : '참가하기'}
+                            </Button>
+                            <Button
+                                onClick={() => setMode('select')}
+                                disabled={isLoading}
+                                variant='ghost'
+                                className='w-full'>
+                                ← 돌아가기
+                            </Button>
+                        </CardContent>
+                    </>
                 )}
 
                 {error && (
-                    <p className='mt-4 text-center text-sm text-red-400'>
-                        {error}
-                    </p>
+                    <CardContent className='pt-0'>
+                        <p className='text-destructive text-center text-sm'>
+                            {error}
+                        </p>
+                    </CardContent>
                 )}
-            </div>
+            </Card>
         </div>
     )
 }

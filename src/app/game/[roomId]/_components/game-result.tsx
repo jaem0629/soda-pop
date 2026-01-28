@@ -1,5 +1,8 @@
 'use client'
 
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+
 type GameResultProps = {
     myNickname: string
     myScore: number
@@ -23,30 +26,38 @@ export default function GameResult({
               : '🤝 무승부'
 
     return (
-        <div className='flex flex-col items-center gap-4 rounded-2xl bg-[#1a1a2e] p-8'>
-            <p className='text-3xl font-bold text-white'>{result}</p>
-
-            <div className='flex gap-8 text-center'>
-                <div>
-                    <p className='text-gray-400'>{myNickname}</p>
-                    <p className='text-3xl font-bold text-yellow-400'>
-                        {myScore}
-                    </p>
+        <Card className='w-full max-w-md'>
+            <CardHeader className='text-center'>
+                <CardTitle className='text-3xl'>{result}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className='flex items-center justify-center gap-8'>
+                    <div className='text-center'>
+                        <p className='text-muted-foreground text-sm'>
+                            {myNickname}
+                        </p>
+                        <p className='text-chart-5 text-4xl font-bold tabular-nums'>
+                            {myScore}
+                        </p>
+                    </div>
+                    <div className='text-muted-foreground text-2xl font-bold'>
+                        vs
+                    </div>
+                    <div className='text-center'>
+                        <p className='text-muted-foreground text-sm'>
+                            {opponentName ?? '???'}
+                        </p>
+                        <p className='text-chart-4 text-4xl font-bold tabular-nums'>
+                            {opponentScore}
+                        </p>
+                    </div>
                 </div>
-                <div className='text-3xl font-bold text-gray-600'>vs</div>
-                <div>
-                    <p className='text-gray-400'>{opponentName}</p>
-                    <p className='text-3xl font-bold text-pink-400'>
-                        {opponentScore}
-                    </p>
-                </div>
-            </div>
-
-            <button
-                onClick={onGoHome}
-                className='mt-4 rounded-xl bg-linear-to-r from-purple-500 to-pink-500 px-8 py-4 font-bold text-white transition-all hover:from-purple-600 hover:to-pink-600'>
-                메인으로
-            </button>
-        </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={onGoHome} className='w-full' size='lg'>
+                    메인으로
+                </Button>
+            </CardFooter>
+        </Card>
     )
 }
