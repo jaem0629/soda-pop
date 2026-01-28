@@ -1,4 +1,4 @@
-name: Cleanup old rooms
+name: Cleanup old matches
 
 on:
     schedule:
@@ -11,9 +11,9 @@ jobs:
     cleanup:
         runs-on: ubuntu-latest
         steps:
-            - name: Cleanup old rooms
+            - name: Cleanup old matches
               run: |
-                  curl -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/cleanup_old_rooms" \
+                  curl -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/cleanup_old_matches" \
                     -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
                     -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
                     -H "Content-Type: application/json"

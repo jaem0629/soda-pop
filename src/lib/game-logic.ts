@@ -1,4 +1,3 @@
-// 타입 정의
 export type PieceType = 0 | 1 | 2 | 3 | 4 | 5
 export type Board = PieceType[][]
 export type Position = { row: number; col: number }
@@ -9,32 +8,21 @@ export type GameState = {
     isAnimating: boolean
 }
 
-// 게임 상수
 export const BOARD_SIZE = 8
-export const PIECE_TYPES: PieceType[] = [0, 1, 2, 3, 4, 5] // 6가지 색상
+export const PIECE_TYPES: PieceType[] = [0, 1, 2, 3, 4, 5]
 export const BASE_SCORE = 10
 
-// 퍼즐 조각 색상 (더 선명하고 구분되는 색상)
 export const PIECE_COLORS = [
-    '#FF4757', // 빨강 (토마토)
-    '#2ED573', // 초록 (라임)
-    '#3742FA', // 파랑 (로얄블루)
-    '#FFA502', // 주황 (오렌지)
-    '#A55EEA', // 보라 (퍼플)
-    '#FF6B81', // 핑크 (로즈)
+    '#FF4757', // 빨강
+    '#2ED573', // 초록
+    '#3742FA', // 파랑
+    '#FFA502', // 주황
+    '#A55EEA', // 보라
+    '#FF6B81', // 핑크
 ]
 
-// 퍼즐 조각 아이콘 (색상 구분 보조)
-export const PIECE_SHAPES = [
-    '●', // 원
-    '◆', // 다이아몬드
-    '★', // 별
-    '▲', // 삼각형
-    '■', // 사각형
-    '♥', // 하트
-]
+export const PIECE_SHAPES = ['●', '◆', '★', '▲', '■', '♥']
 
-// 초기 게임 상태 생성
 export function createInitialGameState(): GameState {
     return {
         board: createBoard(),
@@ -44,7 +32,6 @@ export function createInitialGameState(): GameState {
     }
 }
 
-// 보드 생성 (매칭 없는 상태로)
 export function createBoard(): Board {
     let board: Board
     do {
@@ -55,19 +42,16 @@ export function createBoard(): Board {
     return board
 }
 
-// 랜덤 퍼즐 조각
 export function getRandomPiece(): PieceType {
     return PIECE_TYPES[Math.floor(Math.random() * PIECE_TYPES.length)]
 }
 
-// 두 위치가 인접한지 확인
 export function isAdjacent(pos1: Position, pos2: Position): boolean {
     const rowDiff = Math.abs(pos1.row - pos2.row)
     const colDiff = Math.abs(pos1.col - pos2.col)
     return (rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1)
 }
 
-// 두 조각 교환
 export function swapPieces(
     board: Board,
     pos1: Position,
@@ -80,14 +64,12 @@ export function swapPieces(
     return newBoard
 }
 
-// 모든 매칭 찾기
 export function findAllMatches(board: Board): Position[][] {
     const matches: Position[][] = []
     const visited = Array.from({ length: BOARD_SIZE }, () =>
         Array.from({ length: BOARD_SIZE }, () => false)
     )
 
-    // 가로 매칭 찾기
     for (let row = 0; row < BOARD_SIZE; row++) {
         for (let col = 0; col < BOARD_SIZE - 2; col++) {
             if (visited[row][col]) continue
@@ -108,7 +90,6 @@ export function findAllMatches(board: Board): Position[][] {
         }
     }
 
-    // 세로 매칭 찾기
     const visitedVertical = Array.from({ length: BOARD_SIZE }, () =>
         Array.from({ length: BOARD_SIZE }, () => false)
     )
@@ -138,14 +119,12 @@ export function findAllMatches(board: Board): Position[][] {
     return matches
 }
 
-// 점수 계산
 export function calculateScore(matches: Position[][], combo: number): number {
     let score = 0
 
     for (const match of matches) {
         let matchScore = match.length * BASE_SCORE
 
-        // 4개 매칭: 2배, 5개 이상: 3배
         if (match.length === 4) {
             matchScore *= 2
         } else if (match.length >= 5) {
@@ -155,10 +134,63 @@ export function calculateScore(matches: Position[][], combo: number): number {
         score += matchScore
     }
 
-    // 콤보 보너스 (1.5배씩 증가)
     if (combo > 0) {
         score = Math.floor(score * (1 + combo * 0.5))
     }
 
     return score
+}
+
+export type DropInfo = {
+    col: number
+    fromRow: number
+    toRow: number
+    piece: PieceType
+}
+
+export function calculateDrops(
+    board: Board,
+    matches: Position[][]
+): {
+    newBoard: Board
+    drops: DropInfo[]
+    boardWithHoles: (PieceType | null)[][]
+} {
+    const boardWithHoles: (PieceType | null)[][] = board.map((row) => [...row])
+    for (const match of matches) {
+        for (const pos of match) {
+            boardWithHoles[pos.row][pos.col] = null
+        }
+    }
+
+    const drops: DropInfo[] = []
+    const newBoard: Board = Array.from({ length: BOARD_SIZE }, () =>
+        Array.from({ length: BOARD_SIZE }, () => 0 as PieceType)
+    )
+
+    for (let col = 0; col < BOARD_SIZE; col++) {
+        let writeRow = BOARD_SIZE - 1
+
+        for (let row = BOARD_SIZE - 1; row >= 0; row--) {
+            if (boardWithHoles[row][col] !== null) {
+                const piece = boardWithHoles[row][col] as PieceType
+                newBoard[writeRow][col] = piece
+
+                if (row !== writeRow) {
+                    drops.push({ col, fromRow: row, toRow: writeRow, piece })
+                }
+                writeRow--
+            }
+        }
+
+        let newPieceOffset = 0
+        for (let row = writeRow; row >= 0; row--) {
+            const piece = getRandomPiece()
+            newBoard[row][col] = piece
+            newPieceOffset++
+            drops.push({ col, fromRow: -newPieceOffset, toRow: row, piece })
+        }
+    }
+
+    return { newBoard, drops, boardWithHoles }
 }
