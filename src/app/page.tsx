@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createRoom, joinRoom } from '@/lib/room'
+import { createMatch, joinMatch } from '@/lib/match'
 
 export default function Home() {
     const router = useRouter()
@@ -21,19 +21,20 @@ export default function Home() {
         setIsLoading(true)
         setError('')
 
-        const room = await createRoom(nickname.trim())
+        const result = await createMatch(nickname.trim(), 'battle', 'private')
 
-        if (room) {
+        if (result) {
             // 로컬 스토리지에 플레이어 정보 저장
             localStorage.setItem(
                 'player',
                 JSON.stringify({
-                    roomId: room.id,
-                    playerNumber: 1,
+                    matchId: result.match.id,
+                    playerId: result.player.id,
+                    playerOrder: result.player.player_order,
                     nickname: nickname.trim(),
                 })
             )
-            router.push(`/game/${room.id}`)
+            router.push(`/game/${result.match.id}`)
         } else {
             setError('방 생성에 실패했습니다')
             setIsLoading(false)
@@ -53,18 +54,19 @@ export default function Home() {
         setIsLoading(true)
         setError('')
 
-        const result = await joinRoom(roomCode.trim(), nickname.trim())
+        const result = await joinMatch(roomCode.trim(), nickname.trim())
 
         if (result) {
             localStorage.setItem(
                 'player',
                 JSON.stringify({
-                    roomId: result.room.id,
-                    playerNumber: result.playerNumber,
+                    matchId: result.match.id,
+                    playerId: result.player.id,
+                    playerOrder: result.playerOrder,
                     nickname: nickname.trim(),
                 })
             )
-            router.push(`/game/${result.room.id}`)
+            router.push(`/game/${result.match.id}`)
         } else {
             setError('방에 참가할 수 없습니다. 코드를 확인해주세요.')
             setIsLoading(false)
@@ -73,7 +75,7 @@ export default function Home() {
 
     return (
         <div className='flex min-h-screen flex-col items-center justify-center bg-[#0f0f23] p-8'>
-            <h1 className='mb-4 text-5xl font-bold text-white'>Soda Pop</h1>
+            <h1 className='mb-4 text-5xl font-bold text-white'>🥤 Soda Pop</h1>
             <p className='mb-8 text-gray-400'>Real-time 2P Puzzle Battle</p>
 
             <div className='w-full max-w-sm rounded-2xl bg-[#1a1a2e] p-6 shadow-2xl'>

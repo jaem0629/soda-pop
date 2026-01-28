@@ -5,23 +5,25 @@ import { useParams, useRouter } from 'next/navigation'
 import GameBoard from '@/components/game-board'
 import { useRealtime } from '@/hooks/use-realtime'
 import {
-    getRoom,
-    updateScore,
-    finishGame,
-    startGame,
+    getMatch,
+    updatePlayerScore,
+    finishMatch,
+    startMatch,
     calculateTimeLeft,
-    leaveRoom,
+    leaveMatch,
+    getOpponent,
     GAME_DURATION,
-    type Room,
-} from '@/lib/room'
+    type MatchWithPlayers,
+} from '@/lib/match'
 
 type PlayerInfo = {
-    roomId: string
-    playerNumber: 1 | 2
+    matchId: string
+    playerId: string
+    playerOrder: number
     nickname: string
 }
 
-function loadPlayerInfo(roomId: string): PlayerInfo | null {
+function loadPlayerInfo(matchId: string): PlayerInfo | null {
     if (typeof window === 'undefined') return null
 
     const stored = localStorage.getItem('player')
@@ -29,7 +31,7 @@ function loadPlayerInfo(roomId: string): PlayerInfo | null {
 
     try {
         const info = JSON.parse(stored) as PlayerInfo
-        if (info.roomId !== roomId) return null
+        if (info.matchId !== matchId) return null
         return info
     } catch {
         return null
@@ -39,12 +41,12 @@ function loadPlayerInfo(roomId: string): PlayerInfo | null {
 export default function GamePage() {
     const params = useParams()
     const router = useRouter()
-    const roomId = params.roomId as string
+    const matchId = params.roomId as string
 
     const [playerInfo] = useState<PlayerInfo | null>(() =>
-        loadPlayerInfo(roomId)
+        loadPlayerInfo(matchId)
     )
-    const [room, setRoom] = useState<Room | null>(null)
+    const [match, setMatch] = useState<MatchWithPlayers | null>(null)
     const [opponentScore, setOpponentScore] = useState(0)
     const [myScore, setMyScore] = useState(0)
     const [timeLeft, setTimeLeft] = useState(GAME_DURATION)
@@ -52,9 +54,13 @@ export default function GamePage() {
 
     const scoreInitializedRef = useRef(false)
     const gameEndedRef = useRef(false)
-    const [gameStartTime, setGameStartTime] = useState<number | null>(null) // 로컬 시간 기준
+    const [gameStartTime, setGameStartTime] = useState<number | null>(null)
 
-    const gameStatus = room?.status ?? 'waiting'
+    const gameStatus = match?.status ?? 'waiting'
+
+    // 내 정보와 상대 정보
+    const myPlayer = match?.players.find(p => p.player_order === playerInfo?.playerOrder)
+    const opponent = match ? getOpponent(match.players, playerInfo?.playerOrder ?? 1) : undefined
 
     // 플레이어 정보 없으면 리다이렉트
     useEffect(() => {
@@ -63,66 +69,57 @@ export default function GamePage() {
         }
     }, [playerInfo, router])
 
-    // 방 정보 로드 (대기 중일 때만 폴링, 게임 중에는 초기 1회)
+    // 방 정보 로드
     useEffect(() => {
-        if (!roomId || !playerInfo) return
+        if (!matchId || !playerInfo) return
 
-        const loadRoom = async () => {
-            const roomData = await getRoom(roomId)
-            if (!roomData) {
+        const loadMatch = async () => {
+            const matchData = await getMatch(matchId)
+            if (!matchData) {
                 router.push('/')
                 return
             }
 
-            setRoom(roomData)
+            setMatch(matchData)
 
-            // 새로고침 시 점수 및 시간 복원 (scoreInitializedRef로 1회만 실행)
-            if (roomData.status === 'playing' && !scoreInitializedRef.current) {
+            // 새로고침 시 점수 및 시간 복원
+            if (matchData.status === 'playing' && !scoreInitializedRef.current) {
                 scoreInitializedRef.current = true
 
-                const myDbScore =
-                    playerInfo.playerNumber === 1
-                        ? roomData.player1_score
-                        : roomData.player2_score
-                const opponentDbScore =
-                    playerInfo.playerNumber === 1
-                        ? roomData.player2_score
-                        : roomData.player1_score
+                const me = matchData.players.find(p => p.player_order === playerInfo.playerOrder)
+                const opp = getOpponent(matchData.players, playerInfo.playerOrder)
 
-                setMyScore(myDbScore)
-                setOpponentScore(opponentDbScore)
+                if (me) setMyScore(me.score)
+                if (opp) setOpponentScore(opp.score)
 
-                // 서버 시간 기준 남은 시간 복원 (새로고침 시)
-                if (roomData.started_at) {
-                    const remaining = calculateTimeLeft(roomData.started_at)
+                // 서버 시간 기준 남은 시간 복원
+                if (matchData.started_at) {
+                    const remaining = calculateTimeLeft(matchData.started_at)
                     setTimeLeft(remaining)
 
-                    // 로컬 타이머 시작점 역산 (남은시간 기준)
                     if (remaining > 0) {
-                        setGameStartTime(
-                            Date.now() - (GAME_DURATION - remaining) * 1000
-                        )
+                        setGameStartTime(Date.now() - (GAME_DURATION - remaining) * 1000)
                     }
                 }
             }
 
-            // 이미 종료된 게임이면 (DB status가 finished)
-            if (roomData.status === 'finished' && !gameEndedRef.current) {
+            // 이미 종료된 게임
+            if (matchData.status === 'finished' && !gameEndedRef.current) {
                 gameEndedRef.current = true
                 setGameEnded(true)
             }
         }
 
-        loadRoom()
+        loadMatch()
 
-        // 대기 중일 때만 폴링 (상대방 입장 감지)
+        // 대기 중일 때만 폴링
         if (gameStatus === 'waiting') {
-            const interval = setInterval(loadRoom, 2000)
+            const interval = setInterval(loadMatch, 2000)
             return () => clearInterval(interval)
         }
-    }, [roomId, router, playerInfo, gameStatus])
+    }, [matchId, router, playerInfo, gameStatus])
 
-    // 타이머 (게임 중에만) - 로컬 시간 기준
+    // 타이머 (로컬 시간 기준)
     useEffect(() => {
         if (gameStatus !== 'playing' || !gameStartTime || gameEndedRef.current)
             return
@@ -136,25 +133,25 @@ export default function GamePage() {
                 gameEndedRef.current = true
                 setGameEnded(true)
                 clearInterval(timer)
-                finishGame(roomId)
+                finishMatch(matchId)
             }
         }, 100)
 
         return () => clearInterval(timer)
-    }, [gameStatus, gameStartTime, roomId])
+    }, [gameStatus, gameStartTime, matchId])
 
     // 실시간 이벤트 처리
     const handleRealtimeEvent = useCallback(
         (event: {
             type: string
-            playerNumber?: 1 | 2
+            playerNumber?: number
             score?: number
             playerName?: string
         }) => {
             switch (event.type) {
                 case 'player_joined':
-                    getRoom(roomId).then((roomData) => {
-                        if (roomData) setRoom(roomData)
+                    getMatch(matchId).then((matchData) => {
+                        if (matchData) setMatch(matchData)
                     })
                     break
 
@@ -162,14 +159,14 @@ export default function GamePage() {
                     gameEndedRef.current = false
                     setGameEnded(false)
                     setTimeLeft(GAME_DURATION)
-                    setGameStartTime(Date.now()) // 로컬 시간 기준!
-                    getRoom(roomId).then((roomData) => {
-                        if (roomData) setRoom(roomData)
+                    setGameStartTime(Date.now())
+                    getMatch(matchId).then((matchData) => {
+                        if (matchData) setMatch(matchData)
                     })
                     break
 
                 case 'score_update':
-                    if (event.playerNumber !== playerInfo?.playerNumber) {
+                    if (event.playerNumber !== playerInfo?.playerOrder) {
                         setOpponentScore(event.score ?? 0)
                     }
                     break
@@ -180,7 +177,7 @@ export default function GamePage() {
                     break
             }
         },
-        [roomId, playerInfo?.playerNumber]
+        [matchId, playerInfo?.playerOrder]
     )
 
     const {
@@ -190,30 +187,30 @@ export default function GamePage() {
         sendGameEnd,
         sendPlayerJoined,
     } = useRealtime({
-        roomId,
-        playerNumber: playerInfo?.playerNumber ?? 1,
+        roomId: matchId,
+        playerNumber: (playerInfo?.playerOrder ?? 1) as 1 | 2,
         onEvent: handleRealtimeEvent,
     })
 
     // 플레이어2 입장 시 알림
     useEffect(() => {
-        if (playerInfo?.playerNumber === 2 && isConnected) {
+        if (playerInfo && playerInfo.playerOrder > 1 && isConnected) {
             sendPlayerJoined(playerInfo.nickname)
         }
     }, [playerInfo, isConnected, sendPlayerJoined])
 
-    // 게임 시작 (플레이어1만)
+    // 게임 시작 (호스트만)
     const handleStartGame = async () => {
-        if (playerInfo?.playerNumber !== 1 || !room?.player2_name) return
+        if (!myPlayer?.is_host || !match || match.players.length < match.max_players) return
 
         gameEndedRef.current = false
         setGameEnded(false)
         setTimeLeft(GAME_DURATION)
 
-        const updatedRoom = await startGame(roomId)
-        if (updatedRoom) {
-            setRoom(updatedRoom)
-            setGameStartTime(Date.now()) // 로컬 시간 기준!
+        const updatedMatch = await startMatch(matchId)
+        if (updatedMatch) {
+            setMatch(prev => prev ? { ...prev, ...updatedMatch } : null)
+            setGameStartTime(Date.now())
             sendGameStart()
         }
     }
@@ -224,10 +221,10 @@ export default function GamePage() {
             setMyScore(score)
             sendScore(score)
             if (playerInfo) {
-                updateScore(roomId, playerInfo.playerNumber, score)
+                updatePlayerScore(matchId, playerInfo.playerOrder, score)
             }
         },
-        [roomId, playerInfo, sendScore]
+        [matchId, playerInfo, sendScore]
     )
 
     // 게임 종료 시 상대방에게 알림
@@ -240,18 +237,17 @@ export default function GamePage() {
     // 페이지 떠날 때 방 정리
     useEffect(() => {
         const handleBeforeUnload = () => {
-            if (room?.status === 'waiting' && playerInfo?.playerNumber === 1) {
-                leaveRoom(roomId)
+            if (match?.status === 'waiting' && myPlayer?.is_host) {
+                leaveMatch(matchId)
             }
         }
 
         window.addEventListener('beforeunload', handleBeforeUnload)
-        return () =>
-            window.removeEventListener('beforeunload', handleBeforeUnload)
-    }, [room?.status, playerInfo?.playerNumber, roomId])
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [match?.status, myPlayer?.is_host, matchId])
 
     // 로딩 중
-    if (!playerInfo || !room) {
+    if (!playerInfo || !match) {
         return (
             <div className='flex min-h-screen items-center justify-center bg-[#0f0f23]'>
                 <p className='text-white'>로딩 중...</p>
@@ -259,9 +255,8 @@ export default function GamePage() {
         )
     }
 
-    const opponentName =
-        playerInfo.playerNumber === 1 ? room.player2_name : room.player1_name
     const isFinished = gameStatus === 'finished' || gameEnded
+    const canStart = myPlayer?.is_host && match.players.length >= match.max_players
 
     return (
         <div className='flex min-h-screen flex-col items-center bg-[#0f0f23] p-4'>
@@ -298,7 +293,7 @@ export default function GamePage() {
                     <div className='text-center'>
                         <p className='text-sm text-gray-400'>상대</p>
                         <p className='font-bold text-white'>
-                            {opponentName ?? '???'}
+                            {opponent?.player_name ?? '???'}
                         </p>
                         <p className='text-2xl font-bold text-pink-400'>
                             {opponentScore}
@@ -312,20 +307,20 @@ export default function GamePage() {
                 <div className='flex flex-col items-center gap-4 rounded-2xl bg-[#1a1a2e] p-8'>
                     <p className='text-xl text-white'>방 코드</p>
                     <p className='text-4xl font-bold tracking-widest text-purple-400'>
-                        {room.code}
+                        {match.code}
                     </p>
                     <p className='text-gray-400'>
                         이 코드를 상대방에게 공유하세요
                     </p>
 
-                    {!opponentName && (
+                    {!opponent && (
                         <div className='mt-4 flex items-center gap-2 text-gray-400'>
                             <div className='h-4 w-4 animate-spin rounded-full border-2 border-purple-500 border-t-transparent' />
                             상대방 대기 중...
                         </div>
                     )}
 
-                    {opponentName && playerInfo.playerNumber === 1 && (
+                    {canStart && (
                         <button
                             onClick={handleStartGame}
                             className='mt-4 rounded-xl bg-linear-to-r from-green-500 to-emerald-500 px-8 py-4 font-bold text-white transition-all hover:from-green-600 hover:to-emerald-600'>
@@ -333,7 +328,7 @@ export default function GamePage() {
                         </button>
                     )}
 
-                    {opponentName && playerInfo.playerNumber === 2 && (
+                    {opponent && !myPlayer?.is_host && (
                         <p className='mt-4 text-gray-400'>
                             방장이 게임을 시작합니다...
                         </p>
@@ -374,7 +369,7 @@ export default function GamePage() {
                             vs
                         </div>
                         <div>
-                            <p className='text-gray-400'>{opponentName}</p>
+                            <p className='text-gray-400'>{opponent?.player_name}</p>
                             <p className='text-3xl font-bold text-pink-400'>
                                 {opponentScore}
                             </p>
