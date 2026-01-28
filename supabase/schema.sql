@@ -74,12 +74,6 @@ CREATE TABLE IF NOT EXISTS public.matches (
   -- 상태
   status match_status DEFAULT 'waiting',
   
-  -- 게임 설정 (확장용)
-  settings JSONB DEFAULT '{
-    "time_limit": 60,
-    "board_size": 8
-  }'::jsonb,
-  
   -- 타임스탬프
   created_at TIMESTAMPTZ DEFAULT NOW(),
   started_at TIMESTAMPTZ,
