@@ -200,7 +200,7 @@ export default function GamePage() {
         )
     }
 
-    const gameStatus = match.status ?? 'waiting'
+    const gameStatus = match.status
     const isFinished = gameStatus === 'finished' || gameEnded
     const canStart =
         myPlayer?.is_host && match.players.length >= match.max_players

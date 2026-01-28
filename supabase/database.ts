@@ -17,34 +17,34 @@ export type Database = {
       match_players: {
         Row: {
           id: string
-          is_host: boolean | null
+          is_host: boolean
           joined_at: string | null
           match_id: string
           player_name: string
           player_order: number
-          score: number | null
+          score: number
           team_number: number | null
           user_id: string | null
         }
         Insert: {
           id?: string
-          is_host?: boolean | null
+          is_host?: boolean
           joined_at?: string | null
           match_id: string
           player_name: string
           player_order: number
-          score?: number | null
+          score?: number
           team_number?: number | null
           user_id?: string | null
         }
         Update: {
           id?: string
-          is_host?: boolean | null
+          is_host?: boolean
           joined_at?: string | null
           match_id?: string
           player_name?: string
           player_order?: number
-          score?: number | null
+          score?: number
           team_number?: number | null
           user_id?: string | null
         }
@@ -76,7 +76,7 @@ export type Database = {
           max_players: number
           mode: Database["public"]["Enums"]["game_mode"]
           started_at: string | null
-          status: Database["public"]["Enums"]["match_status"] | null
+          status: Database["public"]["Enums"]["match_status"]
           team_size: number | null
         }
         Insert: {
@@ -89,7 +89,7 @@ export type Database = {
           max_players?: number
           mode: Database["public"]["Enums"]["game_mode"]
           started_at?: string | null
-          status?: Database["public"]["Enums"]["match_status"] | null
+          status?: Database["public"]["Enums"]["match_status"]
           team_size?: number | null
         }
         Update: {
@@ -102,7 +102,7 @@ export type Database = {
           max_players?: number
           mode?: Database["public"]["Enums"]["game_mode"]
           started_at?: string | null
-          status?: Database["public"]["Enums"]["match_status"] | null
+          status?: Database["public"]["Enums"]["match_status"]
           team_size?: number | null
         }
         Relationships: []

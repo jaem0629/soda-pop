@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS public.matches (
   team_size INT,  -- coop: 2, 나머지: NULL
   
   -- 상태
-  status match_status DEFAULT 'waiting',
+  status match_status NOT NULL DEFAULT 'waiting',
   
   -- 타임스탬프
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -101,10 +101,10 @@ CREATE TABLE IF NOT EXISTS public.match_players (
   -- 게임 내 정보
   player_order INT NOT NULL,  -- 입장 순서 (1, 2, 3...)
   team_number INT,  -- coop: 1 또는 2, 나머지: NULL
-  score INT DEFAULT 0,
+  score INT NOT NULL DEFAULT 0,
   
   -- 역할
-  is_host BOOLEAN DEFAULT FALSE,
+  is_host BOOLEAN NOT NULL DEFAULT FALSE,
   
   -- 타임스탬프
   joined_at TIMESTAMPTZ DEFAULT NOW(),
