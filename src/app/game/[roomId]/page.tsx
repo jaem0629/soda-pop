@@ -59,8 +59,12 @@ export default function GamePage() {
     const gameStatus = match?.status ?? 'waiting'
 
     // 내 정보와 상대 정보
-    const myPlayer = match?.players.find(p => p.player_order === playerInfo?.playerOrder)
-    const opponent = match ? getOpponent(match.players, playerInfo?.playerOrder ?? 1) : undefined
+    const myPlayer = match?.players.find(
+        (p) => p.player_order === playerInfo?.playerOrder
+    )
+    const opponent = match
+        ? getOpponent(match.players, playerInfo?.playerOrder ?? 1)
+        : undefined
 
     // 플레이어 정보 없으면 리다이렉트
     useEffect(() => {
@@ -83,11 +87,19 @@ export default function GamePage() {
             setMatch(matchData)
 
             // 새로고침 시 점수 및 시간 복원
-            if (matchData.status === 'playing' && !scoreInitializedRef.current) {
+            if (
+                matchData.status === 'playing' &&
+                !scoreInitializedRef.current
+            ) {
                 scoreInitializedRef.current = true
 
-                const me = matchData.players.find(p => p.player_order === playerInfo.playerOrder)
-                const opp = getOpponent(matchData.players, playerInfo.playerOrder)
+                const me = matchData.players.find(
+                    (p) => p.player_order === playerInfo.playerOrder
+                )
+                const opp = getOpponent(
+                    matchData.players,
+                    playerInfo.playerOrder
+                )
 
                 if (me) setMyScore(me.score)
                 if (opp) setOpponentScore(opp.score)
@@ -98,7 +110,9 @@ export default function GamePage() {
                     setTimeLeft(remaining)
 
                     if (remaining > 0) {
-                        setGameStartTime(Date.now() - (GAME_DURATION - remaining) * 1000)
+                        setGameStartTime(
+                            Date.now() - (GAME_DURATION - remaining) * 1000
+                        )
                     }
                 }
             }
@@ -201,7 +215,12 @@ export default function GamePage() {
 
     // 게임 시작 (호스트만)
     const handleStartGame = async () => {
-        if (!myPlayer?.is_host || !match || match.players.length < match.max_players) return
+        if (
+            !myPlayer?.is_host ||
+            !match ||
+            match.players.length < match.max_players
+        )
+            return
 
         gameEndedRef.current = false
         setGameEnded(false)
@@ -209,7 +228,7 @@ export default function GamePage() {
 
         const updatedMatch = await startMatch(matchId)
         if (updatedMatch) {
-            setMatch(prev => prev ? { ...prev, ...updatedMatch } : null)
+            setMatch((prev) => (prev ? { ...prev, ...updatedMatch } : null))
             setGameStartTime(Date.now())
             sendGameStart()
         }
@@ -243,7 +262,8 @@ export default function GamePage() {
         }
 
         window.addEventListener('beforeunload', handleBeforeUnload)
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+        return () =>
+            window.removeEventListener('beforeunload', handleBeforeUnload)
     }, [match?.status, myPlayer?.is_host, matchId])
 
     // 로딩 중
@@ -256,7 +276,8 @@ export default function GamePage() {
     }
 
     const isFinished = gameStatus === 'finished' || gameEnded
-    const canStart = myPlayer?.is_host && match.players.length >= match.max_players
+    const canStart =
+        myPlayer?.is_host && match.players.length >= match.max_players
 
     return (
         <div className='flex min-h-screen flex-col items-center bg-[#0f0f23] p-4'>
@@ -369,7 +390,9 @@ export default function GamePage() {
                             vs
                         </div>
                         <div>
-                            <p className='text-gray-400'>{opponent?.player_name}</p>
+                            <p className='text-gray-400'>
+                                {opponent?.player_name}
+                            </p>
                             <p className='text-3xl font-bold text-pink-400'>
                                 {opponentScore}
                             </p>

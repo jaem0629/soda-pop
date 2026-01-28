@@ -7,7 +7,12 @@ import { generateRoomCode } from './utils'
 
 export type GameMode = 'solo' | 'battle' | 'coop' | 'custom'
 export type EntryType = 'private' | 'matchmaking'
-export type MatchStatus = 'waiting' | 'matching' | 'playing' | 'finished' | 'abandoned'
+export type MatchStatus =
+    | 'waiting'
+    | 'matching'
+    | 'playing'
+    | 'finished'
+    | 'abandoned'
 
 export type Match = {
     id: string
@@ -92,7 +97,10 @@ export async function createMatch(
     if (playerError || !player) {
         console.error('플레이어 추가 실패:', playerError)
         // 매치 롤백 (만료 처리)
-        await supabase.from('matches').update({ expired_at: new Date().toISOString() }).eq('id', match.id)
+        await supabase
+            .from('matches')
+            .update({ expired_at: new Date().toISOString() })
+            .eq('id', match.id)
         return null
     }
 
@@ -142,9 +150,13 @@ export async function joinMatch(
     const players = existingPlayers as MatchPlayer[]
 
     // 3. 이미 참가 중인지 확인 (재참가)
-    const existingPlayer = players.find(p => p.player_name === playerName)
+    const existingPlayer = players.find((p) => p.player_name === playerName)
     if (existingPlayer) {
-        return { match: matchData, player: existingPlayer, playerOrder: existingPlayer.player_order }
+        return {
+            match: matchData,
+            player: existingPlayer,
+            playerOrder: existingPlayer.player_order,
+        }
     }
 
     // 게임 진행 중이면 새 참가 불가
@@ -177,14 +189,20 @@ export async function joinMatch(
         return null
     }
 
-    return { match: matchData, player: newPlayer as MatchPlayer, playerOrder: nextOrder }
+    return {
+        match: matchData,
+        player: newPlayer as MatchPlayer,
+        playerOrder: nextOrder,
+    }
 }
 
 // ================================================
 // 매치 조회 (플레이어 포함)
 // ================================================
 
-export async function getMatch(matchId: string): Promise<MatchWithPlayers | null> {
+export async function getMatch(
+    matchId: string
+): Promise<MatchWithPlayers | null> {
     // 1. 매치 조회
     const { data: match, error: matchError } = await supabase
         .from('matches')
@@ -242,7 +260,10 @@ export async function startMatch(matchId: string): Promise<Match | null> {
 // 남은 시간 계산
 // ================================================
 
-export function calculateTimeLeft(startedAt: string | null, duration: number = GAME_DURATION): number {
+export function calculateTimeLeft(
+    startedAt: string | null,
+    duration: number = GAME_DURATION
+): number {
     if (!startedAt) return duration
 
     // DB 타임스탬프 파싱 (다양한 형식 지원)
@@ -293,7 +314,7 @@ export async function updatePlayerScore(
 export async function finishMatch(matchId: string): Promise<boolean> {
     const { error } = await supabase
         .from('matches')
-        .update({ 
+        .update({
             status: 'finished',
             finished_at: new Date().toISOString(),
         })
@@ -329,14 +350,20 @@ export async function leaveMatch(matchId: string): Promise<boolean> {
 // 플레이어 정보 조회 (by player_order)
 // ================================================
 
-export function getPlayerByOrder(players: MatchPlayer[], order: number): MatchPlayer | undefined {
-    return players.find(p => p.player_order === order)
+export function getPlayerByOrder(
+    players: MatchPlayer[],
+    order: number
+): MatchPlayer | undefined {
+    return players.find((p) => p.player_order === order)
 }
 
 // ================================================
 // 상대방 정보 조회
 // ================================================
 
-export function getOpponent(players: MatchPlayer[], myOrder: number): MatchPlayer | undefined {
-    return players.find(p => p.player_order !== myOrder)
+export function getOpponent(
+    players: MatchPlayer[],
+    myOrder: number
+): MatchPlayer | undefined {
+    return players.find((p) => p.player_order !== myOrder)
 }

@@ -114,7 +114,11 @@ export default function GameBoard({
     const canvasRef = useRef<HTMLCanvasElement>(null)
 
     // 게임 상태
-    const [state, dispatch] = useReducer(gameReducer, initialScore, createInitialState)
+    const [state, dispatch] = useReducer(
+        gameReducer,
+        initialScore,
+        createInitialState
+    )
 
     // 애니메이션 상태
     const [animation, setAnimation] = useState<AnimationState>({ type: 'none' })
@@ -130,7 +134,10 @@ export default function GameBoard({
 
                 const animate = (currentTime: number) => {
                     const elapsed = currentTime - startTime
-                    const progress = Math.min(elapsed / ANIMATION_DURATION.swap, 1)
+                    const progress = Math.min(
+                        elapsed / ANIMATION_DURATION.swap,
+                        1
+                    )
 
                     setAnimation({ type: 'swap', progress, pos1, pos2 })
 
@@ -175,7 +182,8 @@ export default function GameBoard({
                         })
                         requestAnimationFrame(animate)
                     } else if (elapsed < totalDuration) {
-                        const progress = (elapsed - matchDuration) / dropDuration
+                        const progress =
+                            (elapsed - matchDuration) / dropDuration
                         setAnimation({
                             type: 'match-and-drop',
                             phase: 'drop',
@@ -312,7 +320,12 @@ export default function GameBoard({
 
     const handlePointerMove = useCallback(
         (e: React.PointerEvent) => {
-            if (!state.isDragging || !state.dragStart || disabled || state.isProcessing)
+            if (
+                !state.isDragging ||
+                !state.dragStart ||
+                disabled ||
+                state.isProcessing
+            )
                 return
 
             const canvas = canvasRef.current
@@ -329,14 +342,26 @@ export default function GameBoard({
             const startY = state.dragStart.row * CELL_SIZE + CELL_SIZE / 2
 
             const maxOffset = CELL_SIZE * 0.8
-            const offsetX = Math.max(-maxOffset, Math.min(maxOffset, currentX - startX))
-            const offsetY = Math.max(-maxOffset, Math.min(maxOffset, currentY - startY))
+            const offsetX = Math.max(
+                -maxOffset,
+                Math.min(maxOffset, currentX - startX)
+            )
+            const offsetY = Math.max(
+                -maxOffset,
+                Math.min(maxOffset, currentY - startY)
+            )
 
-            dispatch({ type: 'UPDATE_DRAG', offset: { x: offsetX, y: offsetY } })
+            dispatch({
+                type: 'UPDATE_DRAG',
+                offset: { x: offsetX, y: offsetY },
+            })
 
             // 임계값 초과 시 스왑
             const threshold = CELL_SIZE * 0.5
-            if (Math.abs(offsetX) > threshold || Math.abs(offsetY) > threshold) {
+            if (
+                Math.abs(offsetX) > threshold ||
+                Math.abs(offsetY) > threshold
+            ) {
                 const targetPos: Position =
                     Math.abs(offsetX) > Math.abs(offsetY)
                         ? {
@@ -359,7 +384,13 @@ export default function GameBoard({
                 }
             }
         },
-        [state.isDragging, state.dragStart, state.isProcessing, disabled, handleMove]
+        [
+            state.isDragging,
+            state.dragStart,
+            state.isProcessing,
+            disabled,
+            handleMove,
+        ]
     )
 
     const handlePointerUp = useCallback(
@@ -382,7 +413,10 @@ export default function GameBoard({
             if (!pos) return
 
             if (state.selectedPos) {
-                if (pos.row !== state.selectedPos.row || pos.col !== state.selectedPos.col) {
+                if (
+                    pos.row !== state.selectedPos.row ||
+                    pos.col !== state.selectedPos.col
+                ) {
                     handleMove(state.selectedPos, pos)
                 } else {
                     dispatch({ type: 'SELECT', pos: null })
