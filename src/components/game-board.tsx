@@ -345,17 +345,17 @@ export default function GameBoard({
 
     return (
         <div className='flex flex-col items-center gap-4'>
-            <div className='text-2xl font-bold text-white'>
-                점수: <span className='text-yellow-400'>{state.score}</span>
+            <div className='text-foreground text-2xl font-bold'>
+                점수:{' '}
+                <span className='text-chart-5 tabular-nums'>{state.score}</span>
             </div>
 
             <canvas
                 ref={canvasRef}
                 width={BOARD_PX}
                 height={BOARD_PX}
-                className='cursor-pointer touch-none rounded-xl shadow-2xl select-none'
+                className='bg-card cursor-pointer touch-none rounded-xl shadow-2xl select-none'
                 style={{
-                    background: '#1a1a2e',
                     maxWidth: '100%',
                     height: 'auto',
                 }}

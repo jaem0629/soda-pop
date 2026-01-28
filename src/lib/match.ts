@@ -1,5 +1,4 @@
 import { supabase } from './supabase'
-import { generateRoomCode } from './utils'
 import type { Database } from '@/../supabase/database'
 
 type Tables = Database['public']['Tables']
@@ -19,6 +18,12 @@ export type MatchWithPlayers = Match & {
 }
 
 export const GAME_DURATION = 60
+
+function generateRoomCode(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    const randomValues = crypto.getRandomValues(new Uint8Array(6))
+    return Array.from(randomValues, (v) => chars[v % chars.length]).join('')
+}
 
 export async function createMatch(
     playerName: string,

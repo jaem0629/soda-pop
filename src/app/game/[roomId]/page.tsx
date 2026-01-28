@@ -194,8 +194,8 @@ export default function GamePage() {
 
     if (!playerInfo || isLoading || !match) {
         return (
-            <div className='flex min-h-screen items-center justify-center bg-[#0f0f23]'>
-                <p className='text-white'>로딩 중...</p>
+            <div className='flex min-h-svh items-center justify-center'>
+                <p className='text-muted-foreground'>로딩 중...</p>
             </div>
         )
     }
@@ -206,7 +206,7 @@ export default function GamePage() {
         myPlayer?.is_host && match.players.length >= match.max_players
 
     return (
-        <div className='flex min-h-screen flex-col items-center bg-[#0f0f23] p-4'>
+        <div className='flex min-h-svh flex-col items-center p-4'>
             <GameHeader
                 myNickname={playerInfo.nickname}
                 myScore={displayMyScore}

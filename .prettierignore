@@ -18,6 +18,8 @@ yarn.lock
 # auto-generated
 next-env.d.ts
 *.tsbuildinfo
+supabase/database.ts
+src/components/ui
 
 # misc
 .vercel
