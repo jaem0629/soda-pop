@@ -17,34 +17,34 @@ export type Database = {
       match_players: {
         Row: {
           id: string
-          is_host: boolean | null
+          is_host: boolean
           joined_at: string | null
           match_id: string
           player_name: string
           player_order: number
-          score: number | null
+          score: number
           team_number: number | null
           user_id: string | null
         }
         Insert: {
           id?: string
-          is_host?: boolean | null
+          is_host?: boolean
           joined_at?: string | null
           match_id: string
           player_name: string
           player_order: number
-          score?: number | null
+          score?: number
           team_number?: number | null
           user_id?: string | null
         }
         Update: {
           id?: string
-          is_host?: boolean | null
+          is_host?: boolean
           joined_at?: string | null
           match_id?: string
           player_name?: string
           player_order?: number
-          score?: number | null
+          score?: number
           team_number?: number | null
           user_id?: string | null
         }
@@ -75,9 +75,8 @@ export type Database = {
           id: string
           max_players: number
           mode: Database["public"]["Enums"]["game_mode"]
-          settings: Json | null
           started_at: string | null
-          status: Database["public"]["Enums"]["match_status"] | null
+          status: Database["public"]["Enums"]["match_status"]
           team_size: number | null
         }
         Insert: {
@@ -89,9 +88,8 @@ export type Database = {
           id?: string
           max_players?: number
           mode: Database["public"]["Enums"]["game_mode"]
-          settings?: Json | null
           started_at?: string | null
-          status?: Database["public"]["Enums"]["match_status"] | null
+          status?: Database["public"]["Enums"]["match_status"]
           team_size?: number | null
         }
         Update: {
@@ -103,9 +101,8 @@ export type Database = {
           id?: string
           max_players?: number
           mode?: Database["public"]["Enums"]["game_mode"]
-          settings?: Json | null
           started_at?: string | null
-          status?: Database["public"]["Enums"]["match_status"] | null
+          status?: Database["public"]["Enums"]["match_status"]
           team_size?: number | null
         }
         Relationships: []
@@ -202,45 +199,6 @@ export type Database = {
           },
         ]
       }
-      rooms_backup: {
-        Row: {
-          code: string
-          created_at: string | null
-          expired_at: string | null
-          id: string
-          player1_name: string | null
-          player1_score: number | null
-          player2_name: string | null
-          player2_score: number | null
-          started_at: string | null
-          status: string | null
-        }
-        Insert: {
-          code: string
-          created_at?: string | null
-          expired_at?: string | null
-          id?: string
-          player1_name?: string | null
-          player1_score?: number | null
-          player2_name?: string | null
-          player2_score?: number | null
-          started_at?: string | null
-          status?: string | null
-        }
-        Update: {
-          code?: string
-          created_at?: string | null
-          expired_at?: string | null
-          id?: string
-          player1_name?: string | null
-          player1_score?: number | null
-          player2_name?: string | null
-          player2_score?: number | null
-          started_at?: string | null
-          status?: string | null
-        }
-        Relationships: []
-      }
       users: {
         Row: {
           created_at: string | null
@@ -265,7 +223,6 @@ export type Database = {
     }
     Functions: {
       cleanup_old_matches: { Args: never; Returns: undefined }
-      cleanup_old_rooms: { Args: never; Returns: undefined }
     }
     Enums: {
       entry_type: "private" | "matchmaking"

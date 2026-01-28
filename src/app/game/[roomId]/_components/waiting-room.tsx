@@ -1,7 +1,13 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card'
 
 type WaitingRoomProps = {
     code: string | null
@@ -22,7 +28,9 @@ export default function WaitingRoom({
         <Card className='w-full max-w-md'>
             <CardHeader className='text-center'>
                 <CardTitle>방 코드</CardTitle>
-                <CardDescription>이 코드를 상대방에게 공유하세요</CardDescription>
+                <CardDescription>
+                    이 코드를 상대방에게 공유하세요
+                </CardDescription>
             </CardHeader>
             <CardContent className='flex flex-col items-center gap-6'>
                 <p className='text-primary text-5xl font-bold tracking-[0.3em]'>
