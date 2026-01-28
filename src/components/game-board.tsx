@@ -1,8 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useCallback } from 'react'
-import { useGameReducer, calculateDrops } from '@/hooks/use-game-reducer'
-import { useGameAnimation } from '@/hooks/use-game-animation'
+import { useRef, useEffect, useCallback, useReducer, useState } from 'react'
 import {
     renderBoard,
     getGridPosition,
@@ -14,9 +12,19 @@ import {
     swapPieces,
     findAllMatches,
     calculateScore,
+    calculateDrops,
     isAdjacent,
+    createInitialGameState,
+    type Position,
+    type Board,
+    type PieceType,
+    type DropInfo,
 } from '@/lib/game-logic'
-import type { Position } from '@/lib/game-logic'
+import { ANIMATION_DURATION, type AnimationState } from '@/lib/animation'
+
+// ================================================
+// 타입 정의
+// ================================================
 
 interface GameBoardProps {
     onScoreChange?: (score: number) => void
@@ -24,16 +32,175 @@ interface GameBoardProps {
     initialScore?: number
 }
 
+// 게임 상태
+type GameState = {
+    board: Board
+    score: number
+    selectedPos: Position | null
+    isDragging: boolean
+    dragStart: Position | null
+    dragOffset: { x: number; y: number }
+    isProcessing: boolean
+}
+
+// 액션 타입
+type GameAction =
+    | { type: 'RESET'; initialScore: number }
+    | { type: 'SET_BOARD'; board: Board }
+    | { type: 'ADD_SCORE'; score: number }
+    | { type: 'SELECT'; pos: Position | null }
+    | { type: 'START_DRAG'; pos: Position }
+    | { type: 'UPDATE_DRAG'; offset: { x: number; y: number } }
+    | { type: 'END_DRAG' }
+    | { type: 'SET_PROCESSING'; isProcessing: boolean }
+
+// ================================================
+// 리듀서
+// ================================================
+
+const createInitialState = (initialScore: number = 0): GameState => ({
+    ...createInitialGameState(),
+    score: initialScore,
+    selectedPos: null,
+    isDragging: false,
+    dragStart: null,
+    dragOffset: { x: 0, y: 0 },
+    isProcessing: false,
+})
+
+function gameReducer(state: GameState, action: GameAction): GameState {
+    switch (action.type) {
+        case 'RESET':
+            return createInitialState(action.initialScore)
+        case 'SET_BOARD':
+            return { ...state, board: action.board }
+        case 'ADD_SCORE':
+            return { ...state, score: state.score + action.score }
+        case 'SELECT':
+            return { ...state, selectedPos: action.pos }
+        case 'START_DRAG':
+            return {
+                ...state,
+                isDragging: true,
+                dragStart: action.pos,
+                dragOffset: { x: 0, y: 0 },
+                selectedPos: action.pos,
+            }
+        case 'UPDATE_DRAG':
+            return { ...state, dragOffset: action.offset }
+        case 'END_DRAG':
+            return {
+                ...state,
+                isDragging: false,
+                dragStart: null,
+                dragOffset: { x: 0, y: 0 },
+            }
+        case 'SET_PROCESSING':
+            return { ...state, isProcessing: action.isProcessing }
+        default:
+            return state
+    }
+}
+
+// ================================================
+// 컴포넌트
+// ================================================
+
 export default function GameBoard({
     onScoreChange,
     disabled = false,
     initialScore = 0,
 }: GameBoardProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
-    const { state, actions } = useGameReducer(initialScore)
-    const { animation, animateSwap, animateMatchAndDrop } = useGameAnimation()
 
+    // 게임 상태
+    const [state, dispatch] = useReducer(gameReducer, initialScore, createInitialState)
+
+    // 애니메이션 상태
+    const [animation, setAnimation] = useState<AnimationState>({ type: 'none' })
+
+    // ================================================
+    // 애니메이션 함수
+    // ================================================
+
+    const animateSwap = useCallback(
+        (pos1: Position, pos2: Position): Promise<void> => {
+            return new Promise((resolve) => {
+                const startTime = performance.now()
+
+                const animate = (currentTime: number) => {
+                    const elapsed = currentTime - startTime
+                    const progress = Math.min(elapsed / ANIMATION_DURATION.swap, 1)
+
+                    setAnimation({ type: 'swap', progress, pos1, pos2 })
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate)
+                    } else {
+                        setAnimation({ type: 'none' })
+                        resolve()
+                    }
+                }
+
+                requestAnimationFrame(animate)
+            })
+        },
+        []
+    )
+
+    const animateMatchAndDrop = useCallback(
+        (
+            matches: Position[][],
+            drops: DropInfo[],
+            baseBoard: (PieceType | null)[][]
+        ): Promise<void> => {
+            return new Promise((resolve) => {
+                const matchDuration = ANIMATION_DURATION.match
+                const dropDuration = ANIMATION_DURATION.drop
+                const totalDuration = matchDuration + dropDuration
+                const startTime = performance.now()
+
+                const animate = (currentTime: number) => {
+                    const elapsed = currentTime - startTime
+
+                    if (elapsed < matchDuration) {
+                        const progress = elapsed / matchDuration
+                        setAnimation({
+                            type: 'match-and-drop',
+                            phase: 'match',
+                            progress,
+                            matches,
+                            drops,
+                            baseBoard,
+                        })
+                        requestAnimationFrame(animate)
+                    } else if (elapsed < totalDuration) {
+                        const progress = (elapsed - matchDuration) / dropDuration
+                        setAnimation({
+                            type: 'match-and-drop',
+                            phase: 'drop',
+                            progress,
+                            matches,
+                            drops,
+                            baseBoard,
+                        })
+                        requestAnimationFrame(animate)
+                    } else {
+                        setAnimation({ type: 'none' })
+                        resolve()
+                    }
+                }
+
+                requestAnimationFrame(animate)
+            })
+        },
+        []
+    )
+
+    // ================================================
     // Canvas 렌더링
+    // ================================================
+
     useEffect(() => {
         const canvas = canvasRef.current
         if (!canvas) return
@@ -51,33 +218,36 @@ export default function GameBoard({
         })
     }, [state, animation])
 
+    // ================================================
     // 이동 처리
+    // ================================================
+
     const handleMove = useCallback(
         async (pos1: Position, pos2: Position) => {
             if (disabled || state.isProcessing) return
 
             if (!isAdjacent(pos1, pos2)) {
-                actions.select(null)
+                dispatch({ type: 'SELECT', pos: null })
                 return
             }
 
-            actions.setProcessing(true)
-            actions.select(null)
+            dispatch({ type: 'SET_PROCESSING', isProcessing: true })
+            dispatch({ type: 'SELECT', pos: null })
 
             // 스왑 애니메이션
             await animateSwap(pos1, pos2)
 
             // 스왑 적용
             let currentBoard = swapPieces(state.board, pos1, pos2)
-            actions.setBoard(currentBoard)
+            dispatch({ type: 'SET_BOARD', board: currentBoard })
 
             let matches = findAllMatches(currentBoard)
 
             // 매칭 없으면 되돌리기
             if (matches.length === 0) {
                 await animateSwap(pos2, pos1)
-                actions.setBoard(state.board)
-                actions.setProcessing(false)
+                dispatch({ type: 'SET_BOARD', board: state.board })
+                dispatch({ type: 'SET_PROCESSING', isProcessing: false })
                 return
             }
 
@@ -90,41 +260,39 @@ export default function GameBoard({
                 totalScore += matchScore
                 combo++
 
-                // 드롭 정보 미리 계산
                 const { newBoard, drops, boardWithHoles } = calculateDrops(
                     currentBoard,
                     matches
                 )
 
-                // 매칭 + 드롭 애니메이션 (하나로 연결, 끊김 없음)
                 await animateMatchAndDrop(matches, drops, boardWithHoles)
 
-                // 애니메이션 완료 후 보드 업데이트
                 currentBoard = newBoard
-                actions.setBoard(currentBoard)
-                actions.addScore(matchScore)
+                dispatch({ type: 'SET_BOARD', board: currentBoard })
+                dispatch({ type: 'ADD_SCORE', score: matchScore })
 
                 matches = findAllMatches(currentBoard)
             }
 
-            // 최신 점수 계산 (state.score는 stale할 수 있음)
             const newScore = state.score + totalScore
             onScoreChange?.(newScore)
-            actions.setProcessing(false)
+            dispatch({ type: 'SET_PROCESSING', isProcessing: false })
         },
         [
             state.board,
             state.score,
             state.isProcessing,
             disabled,
-            actions,
             animateSwap,
             animateMatchAndDrop,
             onScoreChange,
         ]
     )
 
-    // 포인터 이벤트 핸들러
+    // ================================================
+    // 포인터 이벤트
+    // ================================================
+
     const handlePointerDown = useCallback(
         (e: React.PointerEvent) => {
             if (disabled || state.isProcessing) return
@@ -136,20 +304,15 @@ export default function GameBoard({
             const pos = getGridPosition(canvas, e.clientX, e.clientY)
             if (!pos) return
 
-            actions.startDrag(pos)
+            dispatch({ type: 'START_DRAG', pos })
             ;(e.target as HTMLCanvasElement).setPointerCapture(e.pointerId)
         },
-        [disabled, state.isProcessing, actions]
+        [disabled, state.isProcessing]
     )
 
     const handlePointerMove = useCallback(
         (e: React.PointerEvent) => {
-            if (
-                !state.isDragging ||
-                !state.dragStart ||
-                disabled ||
-                state.isProcessing
-            )
+            if (!state.isDragging || !state.dragStart || disabled || state.isProcessing)
                 return
 
             const canvas = canvasRef.current
@@ -166,23 +329,14 @@ export default function GameBoard({
             const startY = state.dragStart.row * CELL_SIZE + CELL_SIZE / 2
 
             const maxOffset = CELL_SIZE * 0.8
-            const offsetX = Math.max(
-                -maxOffset,
-                Math.min(maxOffset, currentX - startX)
-            )
-            const offsetY = Math.max(
-                -maxOffset,
-                Math.min(maxOffset, currentY - startY)
-            )
+            const offsetX = Math.max(-maxOffset, Math.min(maxOffset, currentX - startX))
+            const offsetY = Math.max(-maxOffset, Math.min(maxOffset, currentY - startY))
 
-            actions.updateDrag({ x: offsetX, y: offsetY })
+            dispatch({ type: 'UPDATE_DRAG', offset: { x: offsetX, y: offsetY } })
 
             // 임계값 초과 시 스왑
             const threshold = CELL_SIZE * 0.5
-            if (
-                Math.abs(offsetX) > threshold ||
-                Math.abs(offsetY) > threshold
-            ) {
+            if (Math.abs(offsetX) > threshold || Math.abs(offsetY) > threshold) {
                 const targetPos: Position =
                     Math.abs(offsetX) > Math.abs(offsetY)
                         ? {
@@ -200,21 +354,21 @@ export default function GameBoard({
                     targetPos.col >= 0 &&
                     targetPos.col < BOARD_SIZE
                 ) {
-                    actions.endDrag()
+                    dispatch({ type: 'END_DRAG' })
                     handleMove(state.dragStart, targetPos)
                 }
             }
         },
-        [state, disabled, actions, handleMove]
+        [state.isDragging, state.dragStart, state.isProcessing, disabled, handleMove]
     )
 
     const handlePointerUp = useCallback(
         (e: React.PointerEvent) => {
             if (state.isProcessing) return
             ;(e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId)
-            actions.endDrag()
+            dispatch({ type: 'END_DRAG' })
         },
-        [state.isProcessing, actions]
+        [state.isProcessing]
     )
 
     const handleClick = useCallback(
@@ -228,20 +382,21 @@ export default function GameBoard({
             if (!pos) return
 
             if (state.selectedPos) {
-                if (
-                    pos.row !== state.selectedPos.row ||
-                    pos.col !== state.selectedPos.col
-                ) {
+                if (pos.row !== state.selectedPos.row || pos.col !== state.selectedPos.col) {
                     handleMove(state.selectedPos, pos)
                 } else {
-                    actions.select(null)
+                    dispatch({ type: 'SELECT', pos: null })
                 }
             } else {
-                actions.select(pos)
+                dispatch({ type: 'SELECT', pos })
             }
         },
-        [state, actions, handleMove]
+        [state.isProcessing, state.isDragging, state.selectedPos, handleMove]
     )
+
+    // ================================================
+    // 렌더링
+    // ================================================
 
     return (
         <div className='flex flex-col items-center gap-4'>

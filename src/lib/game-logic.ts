@@ -162,3 +162,63 @@ export function calculateScore(matches: Position[][], combo: number): number {
 
     return score
 }
+
+// 드롭 정보 타입
+export type DropInfo = {
+    col: number
+    fromRow: number
+    toRow: number
+    piece: PieceType
+}
+
+// 매칭 후 드롭 계산
+export function calculateDrops(
+    board: Board,
+    matches: Position[][]
+): {
+    newBoard: Board
+    drops: DropInfo[]
+    boardWithHoles: (PieceType | null)[][]
+} {
+    // 매칭된 위치를 null로 표시
+    const boardWithHoles: (PieceType | null)[][] = board.map((row) => [...row])
+    for (const match of matches) {
+        for (const pos of match) {
+            boardWithHoles[pos.row][pos.col] = null
+        }
+    }
+
+    const drops: DropInfo[] = []
+    const newBoard: Board = Array.from({ length: BOARD_SIZE }, () =>
+        Array.from({ length: BOARD_SIZE }, () => 0 as PieceType)
+    )
+
+    // 각 열에 대해 드롭 처리
+    for (let col = 0; col < BOARD_SIZE; col++) {
+        let writeRow = BOARD_SIZE - 1
+
+        // 기존 조각 아래로 이동
+        for (let row = BOARD_SIZE - 1; row >= 0; row--) {
+            if (boardWithHoles[row][col] !== null) {
+                const piece = boardWithHoles[row][col] as PieceType
+                newBoard[writeRow][col] = piece
+
+                if (row !== writeRow) {
+                    drops.push({ col, fromRow: row, toRow: writeRow, piece })
+                }
+                writeRow--
+            }
+        }
+
+        // 새 조각 생성 (위에서 떨어짐)
+        let newPieceOffset = 0
+        for (let row = writeRow; row >= 0; row--) {
+            const piece = getRandomPiece()
+            newBoard[row][col] = piece
+            newPieceOffset++
+            drops.push({ col, fromRow: -newPieceOffset, toRow: row, piece })
+        }
+    }
+
+    return { newBoard, drops, boardWithHoles }
+}
