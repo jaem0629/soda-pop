@@ -35,11 +35,9 @@ export function useMatchLoader({
     const [match, setMatch] = useState<MatchWithPlayers | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
-    // 파생 데이터
     const myPlayer = match?.players.find((p) => p.player_order === playerOrder)
     const opponent = match ? getOpponent(match.players, playerOrder) : undefined
 
-    // 매치 로드 함수 (useCallback으로 안정화)
     const reload = useCallback(() => {
         getMatch(matchId).then((matchData) => {
             if (!matchData) {
@@ -51,13 +49,11 @@ export function useMatchLoader({
         })
     }, [matchId, router])
 
-    // 초기 로드
     useEffect(() => {
         if (!matchId) return
         reload()
     }, [matchId, reload])
 
-    // 대기 중일 때 폴링
     useEffect(() => {
         if (match?.status !== 'waiting') return
 
@@ -75,7 +71,6 @@ export function useMatchLoader({
     }
 }
 
-// 복원 데이터 계산 (순수 함수)
 export function getRestoredGameState(
     match: MatchWithPlayers | null,
     playerOrder: number

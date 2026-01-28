@@ -7,12 +7,12 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
 type GameEvent =
     | { type: 'player_joined'; playerName: string }
     | { type: 'game_start' }
-    | { type: 'score_update'; playerNumber: 1 | 2; score: number }
+    | { type: 'score_update'; playerNumber: number; score: number }
     | { type: 'game_end' }
 
 type UseRealtimeProps = {
     roomId: string
-    playerNumber: 1 | 2
+    playerNumber: number
     onEvent: (event: GameEvent) => void
 }
 
@@ -24,7 +24,6 @@ export function useRealtime({
     const [isConnected, setIsConnected] = useState(false)
     const channelRef = useRef<RealtimeChannel | null>(null)
 
-    // onEvent를 Effect Event로 감싸서 의존성에서 제외
     const handleEvent = useEffectEvent((event: GameEvent) => {
         onEvent(event)
     })
@@ -54,9 +53,8 @@ export function useRealtime({
             channel.unsubscribe()
             channelRef.current = null
         }
-    }, [roomId]) // onEvent 제거됨!
+    }, [roomId])
 
-    // 이벤트 브로드캐스트
     const broadcast = (event: GameEvent) => {
         if (!channelRef.current) return
 
@@ -67,7 +65,6 @@ export function useRealtime({
         })
     }
 
-    // 점수 전송
     const sendScore = (score: number) => {
         broadcast({
             type: 'score_update',
@@ -76,17 +73,14 @@ export function useRealtime({
         })
     }
 
-    // 게임 시작 알림
     const sendGameStart = () => {
         broadcast({ type: 'game_start' })
     }
 
-    // 게임 종료 알림
     const sendGameEnd = () => {
         broadcast({ type: 'game_end' })
     }
 
-    // 플레이어 참가 알림
     const sendPlayerJoined = (playerName: string) => {
         broadcast({ type: 'player_joined', playerName })
     }

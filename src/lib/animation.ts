@@ -1,13 +1,11 @@
 import type { Position, PieceType, DropInfo } from './game-logic'
 
-// 애니메이션 duration 상수
 export const ANIMATION_DURATION = {
     swap: 200,
     match: 350,
     drop: 400,
 } as const
 
-// 이징 함수
 export const easing = {
     outBounce: (t: number): number => {
         if (t < 1 / 2.75) {
@@ -30,7 +28,6 @@ export const easing = {
     },
 }
 
-// 애니메이션 상태 타입
 export type AnimationState =
     | { type: 'none' }
     | { type: 'swap'; progress: number; pos1: Position; pos2: Position }

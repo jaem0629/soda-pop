@@ -18,20 +18,12 @@ import {
     GAME_DURATION,
 } from '@/lib/match'
 
-// ================================================
-// 타입 정의
-// ================================================
-
 type PlayerInfo = {
     matchId: string
     playerId: string
     playerOrder: number
     nickname: string
 }
-
-// ================================================
-// 헬퍼 함수
-// ================================================
 
 function loadPlayerInfo(matchId: string): PlayerInfo | null {
     if (typeof window === 'undefined') return null
@@ -48,32 +40,21 @@ function loadPlayerInfo(matchId: string): PlayerInfo | null {
     }
 }
 
-// ================================================
-// 컴포넌트
-// ================================================
-
 export default function GamePage() {
     const params = useParams()
     const router = useRouter()
     const matchId = params.roomId as string
 
-    // ------------------------------------------------
-    // 플레이어 정보
-    // ------------------------------------------------
     const [playerInfo] = useState<PlayerInfo | null>(() =>
         loadPlayerInfo(matchId)
     )
 
-    // 플레이어 정보 없으면 리다이렉트
     useEffect(() => {
         if (!playerInfo) {
             router.push('/')
         }
     }, [playerInfo, router])
 
-    // ------------------------------------------------
-    // 매치 데이터
-    // ------------------------------------------------
     const {
         match,
         myPlayer,
@@ -86,40 +67,27 @@ export default function GamePage() {
         playerOrder: playerInfo?.playerOrder ?? 1,
     })
 
-    // 복원 데이터 (순수 함수로 계산)
     const restored = getRestoredGameState(match, playerInfo?.playerOrder ?? 1)
 
-    // ------------------------------------------------
-    // 점수 상태 (로컬 변경분만 추적)
-    // ------------------------------------------------
-    // null = 아직 로컬 변경 없음 (서버 값 사용)
-    // number = 로컬에서 변경된 값
+    // 점수: null = 서버 값, number = 로컬 변경값
     const [localMyScore, setLocalMyScore] = useState<number | null>(null)
     const [localOpponentScore, setLocalOpponentScore] = useState<number | null>(
         null
     )
-
-    // 표시할 점수: 로컬 값이 있으면 로컬, 없으면 서버 복원값
     const displayMyScore = localMyScore ?? restored.myScore
     const displayOpponentScore = localOpponentScore ?? restored.opponentScore
 
-    // ------------------------------------------------
-    // 게임 타이머
-    // ------------------------------------------------
     const timer = useGameTimer({
         duration: GAME_DURATION,
         onExpire: () => {
-            // 타이머 만료 시 게임 종료 (훅 내부에서 1회만 호출됨)
             if (match?.status === 'playing') {
                 finishMatch(matchId)
             }
         },
     })
 
-    // 게임 종료 여부 (파생 상태)
     const gameEnded = match?.status === 'finished' || timer.isExpired
 
-    // 게임 복원 시 타이머 시작 (최초 1회) - timer.start는 이벤트 핸들러처럼 동작
     useEffect(() => {
         if (
             match?.status === 'playing' &&
@@ -131,9 +99,6 @@ export default function GamePage() {
         }
     }, [match?.status, restored.elapsedSeconds, timer])
 
-    // ------------------------------------------------
-    // 실시간 통신
-    // ------------------------------------------------
     const handleRealtimeEvent = (event: {
         type: string
         playerNumber?: number
@@ -144,19 +109,16 @@ export default function GamePage() {
             case 'player_joined':
                 reloadMatch()
                 break
-
             case 'game_start':
                 timer.reset()
                 timer.start()
                 reloadMatch()
                 break
-
             case 'score_update':
                 if (event.playerNumber !== playerInfo?.playerOrder) {
                     setLocalOpponentScore(event.score ?? 0)
                 }
                 break
-
             case 'game_end':
                 reloadMatch()
                 break
@@ -171,18 +133,16 @@ export default function GamePage() {
         sendPlayerJoined,
     } = useRealtime({
         roomId: matchId,
-        playerNumber: (playerInfo?.playerOrder ?? 1) as 1 | 2,
+        playerNumber: playerInfo?.playerOrder ?? 1,
         onEvent: handleRealtimeEvent,
     })
 
-    // 플레이어2 입장 시 알림
     useEffect(() => {
         if (playerInfo && playerInfo.playerOrder > 1 && isConnected) {
             sendPlayerJoined(playerInfo.nickname)
         }
     }, [playerInfo, isConnected, sendPlayerJoined])
 
-    // 게임 종료 시 상대방에게 알림
     const gameEndSentRef = useRef(false)
     useEffect(() => {
         if (gameEnded && !gameEndSentRef.current) {
@@ -194,11 +154,6 @@ export default function GamePage() {
         }
     }, [gameEnded, sendGameEnd])
 
-    // ------------------------------------------------
-    // 게임 액션
-    // ------------------------------------------------
-
-    // 게임 시작 (호스트만)
     const handleStartGame = async () => {
         if (
             !myPlayer?.is_host ||
@@ -217,7 +172,6 @@ export default function GamePage() {
         }
     }
 
-    // 점수 변경
     const handleScoreChange = (score: number) => {
         setLocalMyScore(score)
         sendScore(score)
@@ -226,9 +180,6 @@ export default function GamePage() {
         }
     }
 
-    // ------------------------------------------------
-    // 페이지 이탈 처리
-    // ------------------------------------------------
     useEffect(() => {
         const handleBeforeUnload = () => {
             if (match?.status === 'waiting' && myPlayer?.is_host) {
@@ -241,11 +192,6 @@ export default function GamePage() {
             window.removeEventListener('beforeunload', handleBeforeUnload)
     }, [match?.status, myPlayer?.is_host, matchId])
 
-    // ------------------------------------------------
-    // 렌더링
-    // ------------------------------------------------
-
-    // 로딩 중
     if (!playerInfo || isLoading || !match) {
         return (
             <div className='flex min-h-screen items-center justify-center bg-[#0f0f23]'>
@@ -254,7 +200,7 @@ export default function GamePage() {
         )
     }
 
-    const gameStatus = match.status
+    const gameStatus = match.status ?? 'waiting'
     const isFinished = gameStatus === 'finished' || gameEnded
     const canStart =
         myPlayer?.is_host && match.players.length >= match.max_players

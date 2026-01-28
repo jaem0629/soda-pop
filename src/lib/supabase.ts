@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
+import type { Database } from '@/../supabase/database'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Supabase 클라이언트 (타입 없이 사용 - 더 유연함)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables')
+}
+
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)

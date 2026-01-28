@@ -2,12 +2,10 @@ import { easing, type AnimationState } from './animation'
 import type { Board, Position } from './game-logic'
 import { BOARD_SIZE, PIECE_COLORS, PIECE_SHAPES } from './game-logic'
 
-// 렌더링 상수
 export const CELL_SIZE = 64
 export const PADDING = 4
 export const BOARD_PX = BOARD_SIZE * CELL_SIZE
 
-// 렌더링 상태
 export type RenderState = {
     board: Board
     selectedPos: Position | null
@@ -17,7 +15,6 @@ export type RenderState = {
     dragOffset: { x: number; y: number }
 }
 
-// 퍼즐 조각 그리기
 export function drawPiece(
     ctx: CanvasRenderingContext2D,
     piece: number,
@@ -36,25 +33,21 @@ export function drawPiece(
     ctx.save()
     ctx.globalAlpha = alpha
 
-    // 그림자
     ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'
     ctx.shadowBlur = 8
     ctx.shadowOffsetX = 2
     ctx.shadowOffsetY = 4
 
-    // 메인 조각
     ctx.fillStyle = PIECE_COLORS[piece]
     ctx.beginPath()
     ctx.roundRect(pieceX, pieceY, pieceSize, pieceSize, 12)
     ctx.fill()
 
-    // 그림자 리셋
     ctx.shadowColor = 'transparent'
     ctx.shadowBlur = 0
     ctx.shadowOffsetX = 0
     ctx.shadowOffsetY = 0
 
-    // 광택 효과
     const gradient = ctx.createLinearGradient(
         pieceX,
         pieceY,
@@ -69,7 +62,6 @@ export function drawPiece(
     ctx.roundRect(pieceX, pieceY, pieceSize, pieceSize, 12)
     ctx.fill()
 
-    // 아이콘
     ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
     ctx.font = `bold ${pieceSize * 0.45}px Arial`
     ctx.textAlign = 'center'
@@ -79,12 +71,10 @@ export function drawPiece(
     ctx.restore()
 }
 
-// 배경 그리기
 function drawBackground(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = '#1a1a2e'
     ctx.fillRect(0, 0, BOARD_PX, BOARD_PX)
 
-    // 체크 패턴
     for (let row = 0; row < BOARD_SIZE; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
             const x = col * CELL_SIZE
@@ -95,7 +85,6 @@ function drawBackground(ctx: CanvasRenderingContext2D): void {
     }
 }
 
-// 선택 하이라이트 그리기
 function drawSelection(ctx: CanvasRenderingContext2D, pos: Position): void {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'
     ctx.fillRect(pos.col * CELL_SIZE, pos.row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
@@ -109,7 +98,6 @@ function drawSelection(ctx: CanvasRenderingContext2D, pos: Position): void {
     )
 }
 
-// 매칭+드롭 애니메이션 렌더링
 function renderMatchAndDropAnimation(
     ctx: CanvasRenderingContext2D,
     board: Board,
@@ -118,7 +106,6 @@ function renderMatchAndDropAnimation(
     const { phase, progress, matches, drops, baseBoard } = animation
 
     if (phase === 'match') {
-        // 매칭 페이즈: 매칭된 타일 페이드아웃
         for (let row = 0; row < BOARD_SIZE; row++) {
             for (let col = 0; col < BOARD_SIZE; col++) {
                 const piece = board[row][col]
@@ -142,10 +129,8 @@ function renderMatchAndDropAnimation(
             }
         }
     } else {
-        // 드롭 페이즈: 타일 떨어지기
         const dropProgress = easing.outBounce(progress)
 
-        // 움직이지 않는 조각들 (null이 아니고 드롭 대상이 아닌 것)
         for (let row = 0; row < BOARD_SIZE; row++) {
             for (let col = 0; col < BOARD_SIZE; col++) {
                 const piece = baseBoard[row][col]
@@ -166,7 +151,6 @@ function renderMatchAndDropAnimation(
             }
         }
 
-        // 드롭하는 조각들
         for (const drop of drops) {
             const startY = drop.fromRow * CELL_SIZE
             const endY = drop.toRow * CELL_SIZE
@@ -185,7 +169,6 @@ function renderMatchAndDropAnimation(
     }
 }
 
-// 스왑 애니메이션 렌더링
 function renderSwapAnimation(
     ctx: CanvasRenderingContext2D,
     board: Board,
@@ -216,7 +199,6 @@ function renderSwapAnimation(
     }
 }
 
-// 일반 상태 렌더링
 function renderNormalState(
     ctx: CanvasRenderingContext2D,
     board: Board,
@@ -229,7 +211,6 @@ function renderNormalState(
             let y = row * CELL_SIZE
             let scale = 1
 
-            // 드래그 중인 조각
             if (
                 state.isDragging &&
                 state.dragStart &&
@@ -246,19 +227,16 @@ function renderNormalState(
     }
 }
 
-// 메인 렌더 함수
 export function renderBoard(
     ctx: CanvasRenderingContext2D,
     state: RenderState
 ): void {
     drawBackground(ctx)
 
-    // 선택 하이라이트
     if (state.selectedPos && state.animation.type === 'none') {
         drawSelection(ctx, state.selectedPos)
     }
 
-    // 애니메이션 타입에 따라 렌더링
     switch (state.animation.type) {
         case 'match-and-drop':
             renderMatchAndDropAnimation(ctx, state.board, state.animation)
@@ -272,7 +250,6 @@ export function renderBoard(
     }
 }
 
-// 좌표 → 그리드 위치 변환
 export function getGridPosition(
     canvas: HTMLCanvasElement,
     clientX: number,

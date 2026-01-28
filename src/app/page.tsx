@@ -24,7 +24,6 @@ export default function Home() {
         const result = await createMatch(nickname.trim(), 'battle', 'private')
 
         if (result) {
-            // 로컬 스토리지에 플레이어 정보 저장
             localStorage.setItem(
                 'player',
                 JSON.stringify({

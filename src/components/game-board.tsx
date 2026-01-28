@@ -22,18 +22,13 @@ import {
 } from '@/lib/game-logic'
 import { ANIMATION_DURATION, type AnimationState } from '@/lib/animation'
 
-// ================================================
-// 타입 정의
-// ================================================
-
 interface GameBoardProps {
     onScoreChange?: (score: number) => void
     disabled?: boolean
     initialScore?: number
 }
 
-// 게임 상태
-type GameState = {
+type BoardState = {
     board: Board
     score: number
     selectedPos: Position | null
@@ -43,7 +38,6 @@ type GameState = {
     isProcessing: boolean
 }
 
-// 액션 타입
 type GameAction =
     | { type: 'RESET'; initialScore: number }
     | { type: 'SET_BOARD'; board: Board }
@@ -54,11 +48,7 @@ type GameAction =
     | { type: 'END_DRAG' }
     | { type: 'SET_PROCESSING'; isProcessing: boolean }
 
-// ================================================
-// 리듀서
-// ================================================
-
-const createInitialState = (initialScore: number = 0): GameState => ({
+const createInitialState = (initialScore: number = 0): BoardState => ({
     ...createInitialGameState(),
     score: initialScore,
     selectedPos: null,
@@ -68,7 +58,7 @@ const createInitialState = (initialScore: number = 0): GameState => ({
     isProcessing: false,
 })
 
-function gameReducer(state: GameState, action: GameAction): GameState {
+function gameReducer(state: BoardState, action: GameAction): BoardState {
     switch (action.type) {
         case 'RESET':
             return createInitialState(action.initialScore)
@@ -102,30 +92,18 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     }
 }
 
-// ================================================
-// 컴포넌트
-// ================================================
-
 export default function GameBoard({
     onScoreChange,
     disabled = false,
     initialScore = 0,
 }: GameBoardProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
-
-    // 게임 상태
     const [state, dispatch] = useReducer(
         gameReducer,
         initialScore,
         createInitialState
     )
-
-    // 애니메이션 상태
     const [animation, setAnimation] = useState<AnimationState>({ type: 'none' })
-
-    // ================================================
-    // 애니메이션 함수
-    // ================================================
 
     const animateSwap = (pos1: Position, pos2: Position): Promise<void> => {
         return new Promise((resolve) => {
@@ -195,10 +173,6 @@ export default function GameBoard({
         })
     }
 
-    // ================================================
-    // Canvas 렌더링
-    // ================================================
-
     useEffect(() => {
         const canvas = canvasRef.current
         if (!canvas) return
@@ -216,10 +190,6 @@ export default function GameBoard({
         })
     }, [state, animation])
 
-    // ================================================
-    // 이동 처리
-    // ================================================
-
     const handleMove = async (pos1: Position, pos2: Position) => {
         if (disabled || state.isProcessing) return
 
@@ -231,16 +201,12 @@ export default function GameBoard({
         dispatch({ type: 'SET_PROCESSING', isProcessing: true })
         dispatch({ type: 'SELECT', pos: null })
 
-        // 스왑 애니메이션
         await animateSwap(pos1, pos2)
-
-        // 스왑 적용
         let currentBoard = swapPieces(state.board, pos1, pos2)
         dispatch({ type: 'SET_BOARD', board: currentBoard })
 
         let matches = findAllMatches(currentBoard)
 
-        // 매칭 없으면 되돌리기
         if (matches.length === 0) {
             await animateSwap(pos2, pos1)
             dispatch({ type: 'SET_BOARD', board: state.board })
@@ -248,7 +214,6 @@ export default function GameBoard({
             return
         }
 
-        // 연쇄 처리
         let totalScore = 0
         let combo = 0
 
@@ -275,10 +240,6 @@ export default function GameBoard({
         onScoreChange?.(newScore)
         dispatch({ type: 'SET_PROCESSING', isProcessing: false })
     }
-
-    // ================================================
-    // 포인터 이벤트
-    // ================================================
 
     const handlePointerDown = (e: React.PointerEvent) => {
         if (disabled || state.isProcessing) return
@@ -328,7 +289,6 @@ export default function GameBoard({
 
         dispatch({ type: 'UPDATE_DRAG', offset: { x: offsetX, y: offsetY } })
 
-        // 임계값 초과 시 스왑
         const threshold = CELL_SIZE * 0.5
         if (Math.abs(offsetX) > threshold || Math.abs(offsetY) > threshold) {
             const targetPos: Position =
@@ -382,10 +342,6 @@ export default function GameBoard({
             dispatch({ type: 'SELECT', pos })
         }
     }
-
-    // ================================================
-    // 렌더링
-    // ================================================
 
     return (
         <div className='flex flex-col items-center gap-4'>
