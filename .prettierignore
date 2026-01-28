@@ -1,0 +1,25 @@
+# dependencies
+node_modules
+.pnp
+.pnp.*
+.yarn
+
+# build
+.next
+out
+build
+dist
+
+# lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# auto-generated
+next-env.d.ts
+*.tsbuildinfo
+
+# misc
+.vercel
+coverage
+.DS_Store

@@ -3,18 +3,24 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import GameBoard from '@/components/game-board'
+import GameHeader from './_components/game-header'
+import WaitingRoom from './_components/waiting-room'
+import GameResult from './_components/game-result'
+import ConnectionIndicator from './_components/connection-indicator'
 import { useRealtime } from '@/hooks/use-realtime'
+import { useGameTimer } from '@/hooks/use-game-timer'
+import { useMatchLoader, getRestoredGameState } from '@/hooks/use-match-loader'
 import {
-    getMatch,
     updatePlayerScore,
     finishMatch,
     startMatch,
-    calculateTimeLeft,
     leaveMatch,
-    getOpponent,
     GAME_DURATION,
-    type MatchWithPlayers,
 } from '@/lib/match'
+
+// ================================================
+// 타입 정의
+// ================================================
 
 type PlayerInfo = {
     matchId: string
@@ -22,6 +28,10 @@ type PlayerInfo = {
     playerOrder: number
     nickname: string
 }
+
+// ================================================
+// 헬퍼 함수
+// ================================================
 
 function loadPlayerInfo(matchId: string): PlayerInfo | null {
     if (typeof window === 'undefined') return null
@@ -38,33 +48,21 @@ function loadPlayerInfo(matchId: string): PlayerInfo | null {
     }
 }
 
+// ================================================
+// 컴포넌트
+// ================================================
+
 export default function GamePage() {
     const params = useParams()
     const router = useRouter()
     const matchId = params.roomId as string
 
+    // ------------------------------------------------
+    // 플레이어 정보
+    // ------------------------------------------------
     const [playerInfo] = useState<PlayerInfo | null>(() =>
         loadPlayerInfo(matchId)
     )
-    const [match, setMatch] = useState<MatchWithPlayers | null>(null)
-    const [opponentScore, setOpponentScore] = useState(0)
-    const [myScore, setMyScore] = useState(0)
-    const [timeLeft, setTimeLeft] = useState(GAME_DURATION)
-    const [gameEnded, setGameEnded] = useState(false)
-
-    const scoreInitializedRef = useRef(false)
-    const gameEndedRef = useRef(false)
-    const [gameStartTime, setGameStartTime] = useState<number | null>(null)
-
-    const gameStatus = match?.status ?? 'waiting'
-
-    // 내 정보와 상대 정보
-    const myPlayer = match?.players.find(
-        (p) => p.player_order === playerInfo?.playerOrder
-    )
-    const opponent = match
-        ? getOpponent(match.players, playerInfo?.playerOrder ?? 1)
-        : undefined
 
     // 플레이어 정보 없으면 리다이렉트
     useEffect(() => {
@@ -73,88 +71,69 @@ export default function GamePage() {
         }
     }, [playerInfo, router])
 
-    // 방 정보 로드
-    useEffect(() => {
-        if (!matchId || !playerInfo) return
+    // ------------------------------------------------
+    // 매치 데이터
+    // ------------------------------------------------
+    const {
+        match,
+        myPlayer,
+        opponent,
+        isLoading,
+        setMatch,
+        reload: reloadMatch,
+    } = useMatchLoader({
+        matchId,
+        playerOrder: playerInfo?.playerOrder ?? 1,
+    })
 
-        const loadMatch = async () => {
-            const matchData = await getMatch(matchId)
-            if (!matchData) {
-                router.push('/')
-                return
-            }
+    // 복원 데이터 (순수 함수로 계산)
+    const restored = getRestoredGameState(match, playerInfo?.playerOrder ?? 1)
 
-            setMatch(matchData)
+    // ------------------------------------------------
+    // 점수 상태 (로컬 변경분만 추적)
+    // ------------------------------------------------
+    // null = 아직 로컬 변경 없음 (서버 값 사용)
+    // number = 로컬에서 변경된 값
+    const [localMyScore, setLocalMyScore] = useState<number | null>(null)
+    const [localOpponentScore, setLocalOpponentScore] = useState<number | null>(
+        null
+    )
 
-            // 새로고침 시 점수 및 시간 복원
-            if (
-                matchData.status === 'playing' &&
-                !scoreInitializedRef.current
-            ) {
-                scoreInitializedRef.current = true
+    // 표시할 점수: 로컬 값이 있으면 로컬, 없으면 서버 복원값
+    const displayMyScore = localMyScore ?? restored.myScore
+    const displayOpponentScore = localOpponentScore ?? restored.opponentScore
 
-                const me = matchData.players.find(
-                    (p) => p.player_order === playerInfo.playerOrder
-                )
-                const opp = getOpponent(
-                    matchData.players,
-                    playerInfo.playerOrder
-                )
-
-                if (me) setMyScore(me.score)
-                if (opp) setOpponentScore(opp.score)
-
-                // 서버 시간 기준 남은 시간 복원
-                if (matchData.started_at) {
-                    const remaining = calculateTimeLeft(matchData.started_at)
-                    setTimeLeft(remaining)
-
-                    if (remaining > 0) {
-                        setGameStartTime(
-                            Date.now() - (GAME_DURATION - remaining) * 1000
-                        )
-                    }
-                }
-            }
-
-            // 이미 종료된 게임
-            if (matchData.status === 'finished' && !gameEndedRef.current) {
-                gameEndedRef.current = true
-                setGameEnded(true)
-            }
-        }
-
-        loadMatch()
-
-        // 대기 중일 때만 폴링
-        if (gameStatus === 'waiting') {
-            const interval = setInterval(loadMatch, 2000)
-            return () => clearInterval(interval)
-        }
-    }, [matchId, router, playerInfo, gameStatus])
-
-    // 타이머 (로컬 시간 기준)
-    useEffect(() => {
-        if (gameStatus !== 'playing' || !gameStartTime || gameEndedRef.current)
-            return
-
-        const timer = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - gameStartTime) / 1000)
-            const remaining = Math.max(0, GAME_DURATION - elapsed)
-            setTimeLeft(remaining)
-
-            if (remaining <= 0 && !gameEndedRef.current) {
-                gameEndedRef.current = true
-                setGameEnded(true)
-                clearInterval(timer)
+    // ------------------------------------------------
+    // 게임 타이머
+    // ------------------------------------------------
+    const timer = useGameTimer({
+        duration: GAME_DURATION,
+        onExpire: () => {
+            // 타이머 만료 시 게임 종료 (훅 내부에서 1회만 호출됨)
+            if (match?.status === 'playing') {
                 finishMatch(matchId)
             }
-        }, 100)
+        },
+    })
 
-        return () => clearInterval(timer)
-    }, [gameStatus, gameStartTime, matchId])
+    // 게임 종료 여부 (파생 상태)
+    const gameEnded = match?.status === 'finished' || timer.isExpired
 
-    // 실시간 이벤트 처리
+    // 게임 복원 시 타이머 시작 (최초 1회) - timer.start는 이벤트 핸들러처럼 동작
+    useEffect(() => {
+        if (
+            match?.status === 'playing' &&
+            restored.elapsedSeconds > 0 &&
+            !timer.isRunning &&
+            !timer.isExpired
+        ) {
+            timer.start(restored.elapsedSeconds)
+        }
+    }, [match?.status, restored.elapsedSeconds, timer])
+
+    // ------------------------------------------------
+    // 실시간 통신
+    // ------------------------------------------------
     const handleRealtimeEvent = (event: {
         type: string
         playerNumber?: number
@@ -163,30 +142,23 @@ export default function GamePage() {
     }) => {
         switch (event.type) {
             case 'player_joined':
-                getMatch(matchId).then((matchData) => {
-                    if (matchData) setMatch(matchData)
-                })
+                reloadMatch()
                 break
 
             case 'game_start':
-                gameEndedRef.current = false
-                setGameEnded(false)
-                setTimeLeft(GAME_DURATION)
-                setGameStartTime(Date.now())
-                getMatch(matchId).then((matchData) => {
-                    if (matchData) setMatch(matchData)
-                })
+                timer.reset()
+                timer.start()
+                reloadMatch()
                 break
 
             case 'score_update':
                 if (event.playerNumber !== playerInfo?.playerOrder) {
-                    setOpponentScore(event.score ?? 0)
+                    setLocalOpponentScore(event.score ?? 0)
                 }
                 break
 
             case 'game_end':
-                gameEndedRef.current = true
-                setGameEnded(true)
+                reloadMatch()
                 break
         }
     }
@@ -210,6 +182,22 @@ export default function GamePage() {
         }
     }, [playerInfo, isConnected, sendPlayerJoined])
 
+    // 게임 종료 시 상대방에게 알림
+    const gameEndSentRef = useRef(false)
+    useEffect(() => {
+        if (gameEnded && !gameEndSentRef.current) {
+            gameEndSentRef.current = true
+            sendGameEnd()
+        }
+        if (!gameEnded) {
+            gameEndSentRef.current = false
+        }
+    }, [gameEnded, sendGameEnd])
+
+    // ------------------------------------------------
+    // 게임 액션
+    // ------------------------------------------------
+
     // 게임 시작 (호스트만)
     const handleStartGame = async () => {
         if (
@@ -219,35 +207,28 @@ export default function GamePage() {
         )
             return
 
-        gameEndedRef.current = false
-        setGameEnded(false)
-        setTimeLeft(GAME_DURATION)
+        timer.reset()
 
         const updatedMatch = await startMatch(matchId)
         if (updatedMatch) {
             setMatch((prev) => (prev ? { ...prev, ...updatedMatch } : null))
-            setGameStartTime(Date.now())
+            timer.start()
             sendGameStart()
         }
     }
 
-    // 점수 변경 핸들러
+    // 점수 변경
     const handleScoreChange = (score: number) => {
-        setMyScore(score)
+        setLocalMyScore(score)
         sendScore(score)
         if (playerInfo) {
             updatePlayerScore(matchId, playerInfo.playerOrder, score)
         }
     }
 
-    // 게임 종료 시 상대방에게 알림
-    useEffect(() => {
-        if (gameEnded) {
-            sendGameEnd()
-        }
-    }, [gameEnded, sendGameEnd])
-
-    // 페이지 떠날 때 방 정리
+    // ------------------------------------------------
+    // 페이지 이탈 처리
+    // ------------------------------------------------
     useEffect(() => {
         const handleBeforeUnload = () => {
             if (match?.status === 'waiting' && myPlayer?.is_host) {
@@ -260,8 +241,12 @@ export default function GamePage() {
             window.removeEventListener('beforeunload', handleBeforeUnload)
     }, [match?.status, myPlayer?.is_host, matchId])
 
+    // ------------------------------------------------
+    // 렌더링
+    // ------------------------------------------------
+
     // 로딩 중
-    if (!playerInfo || !match) {
+    if (!playerInfo || isLoading || !match) {
         return (
             <div className='flex min-h-screen items-center justify-center bg-[#0f0f23]'>
                 <p className='text-white'>로딩 중...</p>
@@ -269,144 +254,52 @@ export default function GamePage() {
         )
     }
 
+    const gameStatus = match.status
     const isFinished = gameStatus === 'finished' || gameEnded
     const canStart =
         myPlayer?.is_host && match.players.length >= match.max_players
 
     return (
         <div className='flex min-h-screen flex-col items-center bg-[#0f0f23] p-4'>
-            {/* 헤더 */}
-            <div className='mb-4 w-full max-w-2xl'>
-                <div className='flex items-center justify-between rounded-xl bg-[#1a1a2e] p-4'>
-                    <div className='text-center'>
-                        <p className='text-sm text-gray-400'>나</p>
-                        <p className='font-bold text-white'>
-                            {playerInfo.nickname}
-                        </p>
-                        <p className='text-2xl font-bold text-yellow-400'>
-                            {myScore}
-                        </p>
-                    </div>
+            <GameHeader
+                myNickname={playerInfo.nickname}
+                myScore={displayMyScore}
+                opponentName={opponent?.player_name ?? null}
+                opponentScore={displayOpponentScore}
+                timeLeft={timer.timeLeft}
+                status={gameStatus}
+                isFinished={isFinished}
+            />
 
-                    <div className='text-center'>
-                        {gameStatus === 'waiting' && (
-                            <p className='text-gray-400'>대기 중</p>
-                        )}
-                        {gameStatus === 'playing' && !isFinished && (
-                            <p
-                                className={`text-4xl font-bold ${timeLeft <= 10 ? 'text-red-500' : 'text-white'}`}>
-                                {timeLeft}
-                            </p>
-                        )}
-                        {isFinished && (
-                            <p className='text-2xl font-bold text-purple-400'>
-                                종료!
-                            </p>
-                        )}
-                    </div>
-
-                    <div className='text-center'>
-                        <p className='text-sm text-gray-400'>상대</p>
-                        <p className='font-bold text-white'>
-                            {opponent?.player_name ?? '???'}
-                        </p>
-                        <p className='text-2xl font-bold text-pink-400'>
-                            {opponentScore}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* 대기 화면 */}
             {gameStatus === 'waiting' && (
-                <div className='flex flex-col items-center gap-4 rounded-2xl bg-[#1a1a2e] p-8'>
-                    <p className='text-xl text-white'>방 코드</p>
-                    <p className='text-4xl font-bold tracking-widest text-purple-400'>
-                        {match.code}
-                    </p>
-                    <p className='text-gray-400'>
-                        이 코드를 상대방에게 공유하세요
-                    </p>
-
-                    {!opponent && (
-                        <div className='mt-4 flex items-center gap-2 text-gray-400'>
-                            <div className='h-4 w-4 animate-spin rounded-full border-2 border-purple-500 border-t-transparent' />
-                            상대방 대기 중...
-                        </div>
-                    )}
-
-                    {canStart && (
-                        <button
-                            onClick={handleStartGame}
-                            className='mt-4 rounded-xl bg-linear-to-r from-green-500 to-emerald-500 px-8 py-4 font-bold text-white transition-all hover:from-green-600 hover:to-emerald-600'>
-                            게임 시작!
-                        </button>
-                    )}
-
-                    {opponent && !myPlayer?.is_host && (
-                        <p className='mt-4 text-gray-400'>
-                            방장이 게임을 시작합니다...
-                        </p>
-                    )}
-                </div>
+                <WaitingRoom
+                    code={match.code}
+                    hasOpponent={!!opponent}
+                    isHost={!!myPlayer?.is_host}
+                    canStart={!!canStart}
+                    onStartGame={handleStartGame}
+                />
             )}
 
-            {/* 게임 화면 */}
             {gameStatus === 'playing' && !isFinished && (
                 <GameBoard
                     onScoreChange={handleScoreChange}
                     disabled={false}
-                    initialScore={myScore}
+                    initialScore={displayMyScore}
                 />
             )}
 
-            {/* 결과 화면 */}
             {isFinished && (
-                <div className='flex flex-col items-center gap-4 rounded-2xl bg-[#1a1a2e] p-8'>
-                    <p className='text-3xl font-bold text-white'>
-                        {myScore > opponentScore
-                            ? '🎉 승리!'
-                            : myScore < opponentScore
-                              ? '😢 패배'
-                              : '🤝 무승부'}
-                    </p>
-
-                    <div className='flex gap-8 text-center'>
-                        <div>
-                            <p className='text-gray-400'>
-                                {playerInfo.nickname}
-                            </p>
-                            <p className='text-3xl font-bold text-yellow-400'>
-                                {myScore}
-                            </p>
-                        </div>
-                        <div className='text-3xl font-bold text-gray-600'>
-                            vs
-                        </div>
-                        <div>
-                            <p className='text-gray-400'>
-                                {opponent?.player_name}
-                            </p>
-                            <p className='text-3xl font-bold text-pink-400'>
-                                {opponentScore}
-                            </p>
-                        </div>
-                    </div>
-
-                    <button
-                        onClick={() => router.push('/')}
-                        className='mt-4 rounded-xl bg-linear-to-r from-purple-500 to-pink-500 px-8 py-4 font-bold text-white transition-all hover:from-purple-600 hover:to-pink-600'>
-                        메인으로
-                    </button>
-                </div>
+                <GameResult
+                    myNickname={playerInfo.nickname}
+                    myScore={displayMyScore}
+                    opponentName={opponent?.player_name ?? null}
+                    opponentScore={displayOpponentScore}
+                    onGoHome={() => router.push('/')}
+                />
             )}
 
-            {/* 연결 상태 */}
-            <div className='fixed right-4 bottom-4'>
-                <div
-                    className={`h-3 w-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}
-                />
-            </div>
+            <ConnectionIndicator isConnected={isConnected} />
         </div>
     )
 }

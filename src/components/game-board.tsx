@@ -295,7 +295,12 @@ export default function GameBoard({
     }
 
     const handlePointerMove = (e: React.PointerEvent) => {
-        if (!state.isDragging || !state.dragStart || disabled || state.isProcessing)
+        if (
+            !state.isDragging ||
+            !state.dragStart ||
+            disabled ||
+            state.isProcessing
+        )
             return
 
         const canvas = canvasRef.current
@@ -312,8 +317,14 @@ export default function GameBoard({
         const startY = state.dragStart.row * CELL_SIZE + CELL_SIZE / 2
 
         const maxOffset = CELL_SIZE * 0.8
-        const offsetX = Math.max(-maxOffset, Math.min(maxOffset, currentX - startX))
-        const offsetY = Math.max(-maxOffset, Math.min(maxOffset, currentY - startY))
+        const offsetX = Math.max(
+            -maxOffset,
+            Math.min(maxOffset, currentX - startX)
+        )
+        const offsetY = Math.max(
+            -maxOffset,
+            Math.min(maxOffset, currentY - startY)
+        )
 
         dispatch({ type: 'UPDATE_DRAG', offset: { x: offsetX, y: offsetY } })
 

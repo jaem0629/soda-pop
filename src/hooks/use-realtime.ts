@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useEffectEvent, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
@@ -24,6 +24,11 @@ export function useRealtime({
     const [isConnected, setIsConnected] = useState(false)
     const channelRef = useRef<RealtimeChannel | null>(null)
 
+    // onEvent를 Effect Event로 감싸서 의존성에서 제외
+    const handleEvent = useEffectEvent((event: GameEvent) => {
+        onEvent(event)
+    })
+
     useEffect(() => {
         const channel = supabase.channel(`room:${roomId}`, {
             config: {
@@ -35,7 +40,7 @@ export function useRealtime({
 
         channel
             .on('broadcast', { event: 'game_event' }, ({ payload }) => {
-                onEvent(payload as GameEvent)
+                handleEvent(payload as GameEvent)
             })
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
@@ -49,7 +54,7 @@ export function useRealtime({
             channel.unsubscribe()
             channelRef.current = null
         }
-    }, [roomId, onEvent])
+    }, [roomId]) // onEvent 제거됨!
 
     // 이벤트 브로드캐스트
     const broadcast = (event: GameEvent) => {
