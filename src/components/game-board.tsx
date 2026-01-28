@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useCallback, useReducer, useState } from 'react'
+import { useRef, useEffect, useReducer, useState } from 'react'
 import {
     renderBoard,
     getGridPosition,
@@ -127,83 +127,73 @@ export default function GameBoard({
     // 애니메이션 함수
     // ================================================
 
-    const animateSwap = useCallback(
-        (pos1: Position, pos2: Position): Promise<void> => {
-            return new Promise((resolve) => {
-                const startTime = performance.now()
+    const animateSwap = (pos1: Position, pos2: Position): Promise<void> => {
+        return new Promise((resolve) => {
+            const startTime = performance.now()
 
-                const animate = (currentTime: number) => {
-                    const elapsed = currentTime - startTime
-                    const progress = Math.min(
-                        elapsed / ANIMATION_DURATION.swap,
-                        1
-                    )
+            const animate = (currentTime: number) => {
+                const elapsed = currentTime - startTime
+                const progress = Math.min(elapsed / ANIMATION_DURATION.swap, 1)
 
-                    setAnimation({ type: 'swap', progress, pos1, pos2 })
+                setAnimation({ type: 'swap', progress, pos1, pos2 })
 
-                    if (progress < 1) {
-                        requestAnimationFrame(animate)
-                    } else {
-                        setAnimation({ type: 'none' })
-                        resolve()
-                    }
+                if (progress < 1) {
+                    requestAnimationFrame(animate)
+                } else {
+                    setAnimation({ type: 'none' })
+                    resolve()
                 }
+            }
 
-                requestAnimationFrame(animate)
-            })
-        },
-        []
-    )
+            requestAnimationFrame(animate)
+        })
+    }
 
-    const animateMatchAndDrop = useCallback(
-        (
-            matches: Position[][],
-            drops: DropInfo[],
-            baseBoard: (PieceType | null)[][]
-        ): Promise<void> => {
-            return new Promise((resolve) => {
-                const matchDuration = ANIMATION_DURATION.match
-                const dropDuration = ANIMATION_DURATION.drop
-                const totalDuration = matchDuration + dropDuration
-                const startTime = performance.now()
+    const animateMatchAndDrop = (
+        matches: Position[][],
+        drops: DropInfo[],
+        baseBoard: (PieceType | null)[][]
+    ): Promise<void> => {
+        return new Promise((resolve) => {
+            const matchDuration = ANIMATION_DURATION.match
+            const dropDuration = ANIMATION_DURATION.drop
+            const totalDuration = matchDuration + dropDuration
+            const startTime = performance.now()
 
-                const animate = (currentTime: number) => {
-                    const elapsed = currentTime - startTime
+            const animate = (currentTime: number) => {
+                const elapsed = currentTime - startTime
 
-                    if (elapsed < matchDuration) {
-                        const progress = elapsed / matchDuration
-                        setAnimation({
-                            type: 'match-and-drop',
-                            phase: 'match',
-                            progress,
-                            matches,
-                            drops,
-                            baseBoard,
-                        })
-                        requestAnimationFrame(animate)
-                    } else if (elapsed < totalDuration) {
-                        const progress =
-                            (elapsed - matchDuration) / dropDuration
-                        setAnimation({
-                            type: 'match-and-drop',
-                            phase: 'drop',
-                            progress,
-                            matches,
-                            drops,
-                            baseBoard,
-                        })
-                        requestAnimationFrame(animate)
-                    } else {
-                        setAnimation({ type: 'none' })
-                        resolve()
-                    }
+                if (elapsed < matchDuration) {
+                    const progress = elapsed / matchDuration
+                    setAnimation({
+                        type: 'match-and-drop',
+                        phase: 'match',
+                        progress,
+                        matches,
+                        drops,
+                        baseBoard,
+                    })
+                    requestAnimationFrame(animate)
+                } else if (elapsed < totalDuration) {
+                    const progress = (elapsed - matchDuration) / dropDuration
+                    setAnimation({
+                        type: 'match-and-drop',
+                        phase: 'drop',
+                        progress,
+                        matches,
+                        drops,
+                        baseBoard,
+                    })
+                    requestAnimationFrame(animate)
+                } else {
+                    setAnimation({ type: 'none' })
+                    resolve()
                 }
+            }
 
-                requestAnimationFrame(animate)
-            })
-        },
-        []
-    )
+            requestAnimationFrame(animate)
+        })
+    }
 
     // ================================================
     // Canvas 렌더링
@@ -230,203 +220,157 @@ export default function GameBoard({
     // 이동 처리
     // ================================================
 
-    const handleMove = useCallback(
-        async (pos1: Position, pos2: Position) => {
-            if (disabled || state.isProcessing) return
+    const handleMove = async (pos1: Position, pos2: Position) => {
+        if (disabled || state.isProcessing) return
 
-            if (!isAdjacent(pos1, pos2)) {
-                dispatch({ type: 'SELECT', pos: null })
-                return
-            }
-
-            dispatch({ type: 'SET_PROCESSING', isProcessing: true })
+        if (!isAdjacent(pos1, pos2)) {
             dispatch({ type: 'SELECT', pos: null })
+            return
+        }
 
-            // 스왑 애니메이션
-            await animateSwap(pos1, pos2)
+        dispatch({ type: 'SET_PROCESSING', isProcessing: true })
+        dispatch({ type: 'SELECT', pos: null })
 
-            // 스왑 적용
-            let currentBoard = swapPieces(state.board, pos1, pos2)
-            dispatch({ type: 'SET_BOARD', board: currentBoard })
+        // 스왑 애니메이션
+        await animateSwap(pos1, pos2)
 
-            let matches = findAllMatches(currentBoard)
+        // 스왑 적용
+        let currentBoard = swapPieces(state.board, pos1, pos2)
+        dispatch({ type: 'SET_BOARD', board: currentBoard })
 
-            // 매칭 없으면 되돌리기
-            if (matches.length === 0) {
-                await animateSwap(pos2, pos1)
-                dispatch({ type: 'SET_BOARD', board: state.board })
-                dispatch({ type: 'SET_PROCESSING', isProcessing: false })
-                return
-            }
+        let matches = findAllMatches(currentBoard)
 
-            // 연쇄 처리
-            let totalScore = 0
-            let combo = 0
-
-            while (matches.length > 0) {
-                const matchScore = calculateScore(matches, combo)
-                totalScore += matchScore
-                combo++
-
-                const { newBoard, drops, boardWithHoles } = calculateDrops(
-                    currentBoard,
-                    matches
-                )
-
-                await animateMatchAndDrop(matches, drops, boardWithHoles)
-
-                currentBoard = newBoard
-                dispatch({ type: 'SET_BOARD', board: currentBoard })
-                dispatch({ type: 'ADD_SCORE', score: matchScore })
-
-                matches = findAllMatches(currentBoard)
-            }
-
-            const newScore = state.score + totalScore
-            onScoreChange?.(newScore)
+        // 매칭 없으면 되돌리기
+        if (matches.length === 0) {
+            await animateSwap(pos2, pos1)
+            dispatch({ type: 'SET_BOARD', board: state.board })
             dispatch({ type: 'SET_PROCESSING', isProcessing: false })
-        },
-        [
-            state.board,
-            state.score,
-            state.isProcessing,
-            disabled,
-            animateSwap,
-            animateMatchAndDrop,
-            onScoreChange,
-        ]
-    )
+            return
+        }
+
+        // 연쇄 처리
+        let totalScore = 0
+        let combo = 0
+
+        while (matches.length > 0) {
+            const matchScore = calculateScore(matches, combo)
+            totalScore += matchScore
+            combo++
+
+            const { newBoard, drops, boardWithHoles } = calculateDrops(
+                currentBoard,
+                matches
+            )
+
+            await animateMatchAndDrop(matches, drops, boardWithHoles)
+
+            currentBoard = newBoard
+            dispatch({ type: 'SET_BOARD', board: currentBoard })
+            dispatch({ type: 'ADD_SCORE', score: matchScore })
+
+            matches = findAllMatches(currentBoard)
+        }
+
+        const newScore = state.score + totalScore
+        onScoreChange?.(newScore)
+        dispatch({ type: 'SET_PROCESSING', isProcessing: false })
+    }
 
     // ================================================
     // 포인터 이벤트
     // ================================================
 
-    const handlePointerDown = useCallback(
-        (e: React.PointerEvent) => {
-            if (disabled || state.isProcessing) return
-            e.preventDefault()
+    const handlePointerDown = (e: React.PointerEvent) => {
+        if (disabled || state.isProcessing) return
+        e.preventDefault()
 
-            const canvas = canvasRef.current
-            if (!canvas) return
+        const canvas = canvasRef.current
+        if (!canvas) return
 
-            const pos = getGridPosition(canvas, e.clientX, e.clientY)
-            if (!pos) return
+        const pos = getGridPosition(canvas, e.clientX, e.clientY)
+        if (!pos) return
 
-            dispatch({ type: 'START_DRAG', pos })
-            ;(e.target as HTMLCanvasElement).setPointerCapture(e.pointerId)
-        },
-        [disabled, state.isProcessing]
-    )
+        dispatch({ type: 'START_DRAG', pos })
+        ;(e.target as HTMLCanvasElement).setPointerCapture(e.pointerId)
+    }
 
-    const handlePointerMove = useCallback(
-        (e: React.PointerEvent) => {
+    const handlePointerMove = (e: React.PointerEvent) => {
+        if (!state.isDragging || !state.dragStart || disabled || state.isProcessing)
+            return
+
+        const canvas = canvasRef.current
+        if (!canvas) return
+
+        const rect = canvas.getBoundingClientRect()
+        const scaleX = canvas.width / rect.width
+        const scaleY = canvas.height / rect.height
+
+        const currentX = (e.clientX - rect.left) * scaleX
+        const currentY = (e.clientY - rect.top) * scaleY
+
+        const startX = state.dragStart.col * CELL_SIZE + CELL_SIZE / 2
+        const startY = state.dragStart.row * CELL_SIZE + CELL_SIZE / 2
+
+        const maxOffset = CELL_SIZE * 0.8
+        const offsetX = Math.max(-maxOffset, Math.min(maxOffset, currentX - startX))
+        const offsetY = Math.max(-maxOffset, Math.min(maxOffset, currentY - startY))
+
+        dispatch({ type: 'UPDATE_DRAG', offset: { x: offsetX, y: offsetY } })
+
+        // 임계값 초과 시 스왑
+        const threshold = CELL_SIZE * 0.5
+        if (Math.abs(offsetX) > threshold || Math.abs(offsetY) > threshold) {
+            const targetPos: Position =
+                Math.abs(offsetX) > Math.abs(offsetY)
+                    ? {
+                          row: state.dragStart.row,
+                          col: state.dragStart.col + (offsetX > 0 ? 1 : -1),
+                      }
+                    : {
+                          row: state.dragStart.row + (offsetY > 0 ? 1 : -1),
+                          col: state.dragStart.col,
+                      }
+
             if (
-                !state.isDragging ||
-                !state.dragStart ||
-                disabled ||
-                state.isProcessing
-            )
-                return
-
-            const canvas = canvasRef.current
-            if (!canvas) return
-
-            const rect = canvas.getBoundingClientRect()
-            const scaleX = canvas.width / rect.width
-            const scaleY = canvas.height / rect.height
-
-            const currentX = (e.clientX - rect.left) * scaleX
-            const currentY = (e.clientY - rect.top) * scaleY
-
-            const startX = state.dragStart.col * CELL_SIZE + CELL_SIZE / 2
-            const startY = state.dragStart.row * CELL_SIZE + CELL_SIZE / 2
-
-            const maxOffset = CELL_SIZE * 0.8
-            const offsetX = Math.max(
-                -maxOffset,
-                Math.min(maxOffset, currentX - startX)
-            )
-            const offsetY = Math.max(
-                -maxOffset,
-                Math.min(maxOffset, currentY - startY)
-            )
-
-            dispatch({
-                type: 'UPDATE_DRAG',
-                offset: { x: offsetX, y: offsetY },
-            })
-
-            // 임계값 초과 시 스왑
-            const threshold = CELL_SIZE * 0.5
-            if (
-                Math.abs(offsetX) > threshold ||
-                Math.abs(offsetY) > threshold
+                targetPos.row >= 0 &&
+                targetPos.row < BOARD_SIZE &&
+                targetPos.col >= 0 &&
+                targetPos.col < BOARD_SIZE
             ) {
-                const targetPos: Position =
-                    Math.abs(offsetX) > Math.abs(offsetY)
-                        ? {
-                              row: state.dragStart.row,
-                              col: state.dragStart.col + (offsetX > 0 ? 1 : -1),
-                          }
-                        : {
-                              row: state.dragStart.row + (offsetY > 0 ? 1 : -1),
-                              col: state.dragStart.col,
-                          }
-
-                if (
-                    targetPos.row >= 0 &&
-                    targetPos.row < BOARD_SIZE &&
-                    targetPos.col >= 0 &&
-                    targetPos.col < BOARD_SIZE
-                ) {
-                    dispatch({ type: 'END_DRAG' })
-                    handleMove(state.dragStart, targetPos)
-                }
+                dispatch({ type: 'END_DRAG' })
+                handleMove(state.dragStart, targetPos)
             }
-        },
-        [
-            state.isDragging,
-            state.dragStart,
-            state.isProcessing,
-            disabled,
-            handleMove,
-        ]
-    )
+        }
+    }
 
-    const handlePointerUp = useCallback(
-        (e: React.PointerEvent) => {
-            if (state.isProcessing) return
-            ;(e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId)
-            dispatch({ type: 'END_DRAG' })
-        },
-        [state.isProcessing]
-    )
+    const handlePointerUp = (e: React.PointerEvent) => {
+        if (state.isProcessing) return
+        ;(e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId)
+        dispatch({ type: 'END_DRAG' })
+    }
 
-    const handleClick = useCallback(
-        (e: React.MouseEvent) => {
-            if (state.isProcessing || state.isDragging) return
+    const handleClick = (e: React.MouseEvent) => {
+        if (state.isProcessing || state.isDragging) return
 
-            const canvas = canvasRef.current
-            if (!canvas) return
+        const canvas = canvasRef.current
+        if (!canvas) return
 
-            const pos = getGridPosition(canvas, e.clientX, e.clientY)
-            if (!pos) return
+        const pos = getGridPosition(canvas, e.clientX, e.clientY)
+        if (!pos) return
 
-            if (state.selectedPos) {
-                if (
-                    pos.row !== state.selectedPos.row ||
-                    pos.col !== state.selectedPos.col
-                ) {
-                    handleMove(state.selectedPos, pos)
-                } else {
-                    dispatch({ type: 'SELECT', pos: null })
-                }
+        if (state.selectedPos) {
+            if (
+                pos.row !== state.selectedPos.row ||
+                pos.col !== state.selectedPos.col
+            ) {
+                handleMove(state.selectedPos, pos)
             } else {
-                dispatch({ type: 'SELECT', pos })
+                dispatch({ type: 'SELECT', pos: null })
             }
-        },
-        [state.isProcessing, state.isDragging, state.selectedPos, handleMove]
-    )
+        } else {
+            dispatch({ type: 'SELECT', pos })
+        }
+    }
 
     // ================================================
     // 렌더링

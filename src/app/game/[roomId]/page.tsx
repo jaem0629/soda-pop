@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import GameBoard from '@/components/game-board'
 import { useRealtime } from '@/hooks/use-realtime'
@@ -155,44 +155,41 @@ export default function GamePage() {
     }, [gameStatus, gameStartTime, matchId])
 
     // 실시간 이벤트 처리
-    const handleRealtimeEvent = useCallback(
-        (event: {
-            type: string
-            playerNumber?: number
-            score?: number
-            playerName?: string
-        }) => {
-            switch (event.type) {
-                case 'player_joined':
-                    getMatch(matchId).then((matchData) => {
-                        if (matchData) setMatch(matchData)
-                    })
-                    break
+    const handleRealtimeEvent = (event: {
+        type: string
+        playerNumber?: number
+        score?: number
+        playerName?: string
+    }) => {
+        switch (event.type) {
+            case 'player_joined':
+                getMatch(matchId).then((matchData) => {
+                    if (matchData) setMatch(matchData)
+                })
+                break
 
-                case 'game_start':
-                    gameEndedRef.current = false
-                    setGameEnded(false)
-                    setTimeLeft(GAME_DURATION)
-                    setGameStartTime(Date.now())
-                    getMatch(matchId).then((matchData) => {
-                        if (matchData) setMatch(matchData)
-                    })
-                    break
+            case 'game_start':
+                gameEndedRef.current = false
+                setGameEnded(false)
+                setTimeLeft(GAME_DURATION)
+                setGameStartTime(Date.now())
+                getMatch(matchId).then((matchData) => {
+                    if (matchData) setMatch(matchData)
+                })
+                break
 
-                case 'score_update':
-                    if (event.playerNumber !== playerInfo?.playerOrder) {
-                        setOpponentScore(event.score ?? 0)
-                    }
-                    break
+            case 'score_update':
+                if (event.playerNumber !== playerInfo?.playerOrder) {
+                    setOpponentScore(event.score ?? 0)
+                }
+                break
 
-                case 'game_end':
-                    gameEndedRef.current = true
-                    setGameEnded(true)
-                    break
-            }
-        },
-        [matchId, playerInfo?.playerOrder]
-    )
+            case 'game_end':
+                gameEndedRef.current = true
+                setGameEnded(true)
+                break
+        }
+    }
 
     const {
         isConnected,
@@ -235,16 +232,13 @@ export default function GamePage() {
     }
 
     // 점수 변경 핸들러
-    const handleScoreChange = useCallback(
-        (score: number) => {
-            setMyScore(score)
-            sendScore(score)
-            if (playerInfo) {
-                updatePlayerScore(matchId, playerInfo.playerOrder, score)
-            }
-        },
-        [matchId, playerInfo, sendScore]
-    )
+    const handleScoreChange = (score: number) => {
+        setMyScore(score)
+        sendScore(score)
+        if (playerInfo) {
+            updatePlayerScore(matchId, playerInfo.playerOrder, score)
+        }
+    }
 
     // 게임 종료 시 상대방에게 알림
     useEffect(() => {
