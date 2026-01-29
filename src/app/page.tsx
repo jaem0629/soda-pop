@@ -1,208 +1,125 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Footer } from '@/components/footer'
 import {
     Card,
     CardContent,
     CardDescription,
-    CardHeader,
     CardTitle,
 } from '@/components/ui/card'
-import { createMatch, joinMatch } from '@/lib/match'
+import { Separator } from '@/components/ui/separator'
+import {
+    ArrowUpRightIcon,
+    CircleDollarSignIcon,
+    PlayCircleIcon,
+    SquareDashedIcon,
+} from 'lucide-react'
+import Link from 'next/link'
+
+interface HowToPlayCardProps {
+    icon: React.ReactNode
+    title: string
+    description: string
+    gradient: string
+}
+
+function HowToPlayCard({
+    icon,
+    title,
+    description,
+    gradient,
+}: HowToPlayCardProps) {
+    return (
+        <Card className='group relative rounded-4xl p-8 transition-all hover:-translate-y-4 hover:scale-105'>
+            <CardContent className='relative flex flex-col items-center gap-4 text-center'>
+                <div
+                    className={`mb-4 flex size-32 items-center justify-center rounded-2xl shadow-lg ${gradient}`}>
+                    {icon}
+                </div>
+                <CardTitle className='text-xl font-bold'>{title}</CardTitle>
+                <CardDescription>{description}</CardDescription>
+            </CardContent>
+        </Card>
+    )
+}
 
 export default function Home() {
-    const router = useRouter()
-    const [nickname, setNickname] = useState('')
-    const [roomCode, setRoomCode] = useState('')
-    const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState('')
-    const [mode, setMode] = useState<'select' | 'create' | 'join'>('select')
-
-    const handleCreateRoom = async () => {
-        if (!nickname.trim()) {
-            setError('닉네임을 입력해주세요')
-            return
-        }
-
-        setIsLoading(true)
-        setError('')
-
-        const result = await createMatch(nickname.trim(), 'battle', 'private')
-
-        if (result) {
-            localStorage.setItem(
-                'player',
-                JSON.stringify({
-                    matchId: result.match.id,
-                    playerId: result.player.id,
-                    playerOrder: result.player.player_order,
-                    nickname: nickname.trim(),
-                })
-            )
-            router.push(`/game/${result.match.id}`)
-        } else {
-            setError('방 생성에 실패했습니다')
-            setIsLoading(false)
-        }
-    }
-
-    const handleJoinRoom = async () => {
-        if (!nickname.trim()) {
-            setError('닉네임을 입력해주세요')
-            return
-        }
-        if (!roomCode.trim()) {
-            setError('방 코드를 입력해주세요')
-            return
-        }
-
-        setIsLoading(true)
-        setError('')
-
-        const result = await joinMatch(roomCode.trim(), nickname.trim())
-
-        if (result) {
-            localStorage.setItem(
-                'player',
-                JSON.stringify({
-                    matchId: result.match.id,
-                    playerId: result.player.id,
-                    playerOrder: result.playerOrder,
-                    nickname: nickname.trim(),
-                })
-            )
-            router.push(`/game/${result.match.id}`)
-        } else {
-            setError('방에 참가할 수 없습니다. 코드를 확인해주세요.')
-            setIsLoading(false)
-        }
-    }
-
     return (
-        <div className='flex min-h-svh flex-col items-center justify-center p-4'>
-            <div className='mb-8 text-center'>
-                <h1 className='mb-2 text-5xl font-bold tracking-tight'>
-                    🥤 Soda Pop
-                </h1>
-                <p className='text-muted-foreground'>
-                    Real-time 2P Puzzle Battle
-                </p>
+        <main className='relative flex flex-col items-center justify-center py-16'>
+            <div className='flex w-full flex-col items-center gap-16'>
+                {/* Hero Section */}
+                <div className='flex flex-col items-center text-center'>
+                    <div className='mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-bold text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)] backdrop-blur-sm'>
+                        <CircleDollarSignIcon className='size-4' />
+                        Real-time Multiplayer
+                    </div>
+
+                    <h1 className='mb-6 bg-linear-to-br from-white via-blue-200 to-cyan-400 bg-clip-text text-6xl leading-[0.9] font-black tracking-tighter text-transparent drop-shadow-2xl sm:text-7xl lg:text-8xl'>
+                        SODA POP
+                    </h1>
+
+                    <p className='max-w-lg text-lg leading-relaxed font-medium text-slate-400 sm:text-xl'>
+                        Connect, pop, and compete. Match colorful bubbles in
+                        real-time battles against friends.
+                    </p>
+
+                    <div className='mt-10 flex w-full max-w-xs flex-col items-center gap-4'>
+                        <Link
+                            href='/lobby'
+                            className='group relative flex h-14 w-full items-center justify-center gap-3 overflow-hidden rounded-full bg-cyan-400 font-bold text-slate-900 shadow-[0_0_30px_rgba(34,211,238,0.5)] ring-4 ring-transparent transition-all hover:scale-105 hover:ring-cyan-400/20'>
+                            <PlayCircleIcon className='size-6' />
+                            <span className='text-lg tracking-tight'>
+                                Start Playing
+                            </span>
+                        </Link>
+
+                        <button className='flex items-center gap-2 rounded-full border border-white/10 px-6 py-2 text-sm font-semibold text-slate-400 transition-all hover:border-white/30 hover:bg-white/5 hover:text-white'>
+                            <PlayCircleIcon className='size-4' />
+                            <span>Play as Guest</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* How to Play Section */}
+                <div className='mt-16 w-full'>
+                    <div className='mb-12 flex items-center justify-center gap-4'>
+                        <div className='h-px w-12 bg-linear-to-r from-transparent to-cyan-400/50' />
+                        <h2 className='text-2xl font-black tracking-widest text-white/90 uppercase sm:text-3xl'>
+                            How to Play
+                        </h2>
+                        <div className='h-px w-12 bg-linear-to-l from-transparent to-cyan-400/50' />
+                    </div>
+
+                    <div className='grid grid-cols-1 gap-8 md:grid-cols-3'>
+                        <HowToPlayCard
+                            icon={<SquareDashedIcon className='size-8' />}
+                            title='1. Match'
+                            description='Find and connect 3 or more bubbles of the same color to prime them for popping.'
+                            gradient='bg-gradient-to-br from-cyan-500 to-blue-600'
+                        />
+
+                        <HowToPlayCard
+                            icon={<ArrowUpRightIcon className='size-8' />}
+                            title='2. Pop'
+                            description='Watch them explode! Clear space on the grid and trigger fizzy chain reactions.'
+                            gradient='bg-gradient-to-br from-yellow-500 to-orange-500'
+                        />
+
+                        <HowToPlayCard
+                            icon={<ArrowUpRightIcon className='size-8' />}
+                            title='3. Win'
+                            description='Rack up high scores, unlock rewards, and dominate the Soda Pop leaderboard.'
+                            gradient='bg-gradient-to-br from-purple-500 to-pink-500'
+                        />
+                    </div>
+                </div>
+                <Separator />
+                <Footer
+                    privacyPolicyUrl='#'
+                    termsOfServiceUrl='#'
+                    contactUrl='#'
+                />
             </div>
-
-            <Card className='w-full max-w-sm'>
-                {mode === 'select' && (
-                    <>
-                        <CardHeader>
-                            <CardTitle>게임 시작</CardTitle>
-                            <CardDescription>
-                                닉네임을 입력하고 방을 만들거나 참가하세요
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className='flex flex-col gap-4'>
-                            <Input
-                                type='text'
-                                placeholder='닉네임 입력'
-                                value={nickname}
-                                onChange={(e) => setNickname(e.target.value)}
-                                maxLength={12}
-                            />
-                            <Button
-                                onClick={() => setMode('create')}
-                                disabled={!nickname.trim()}
-                                className='w-full'
-                                size='lg'>
-                                방 만들기
-                            </Button>
-                            <Button
-                                onClick={() => setMode('join')}
-                                disabled={!nickname.trim()}
-                                variant='outline'
-                                className='w-full'
-                                size='lg'>
-                                방 참가하기
-                            </Button>
-                        </CardContent>
-                    </>
-                )}
-
-                {mode === 'create' && (
-                    <>
-                        <CardHeader>
-                            <CardTitle>방 만들기</CardTitle>
-                            <CardDescription>
-                                <span className='text-foreground font-medium'>
-                                    {nickname}
-                                </span>
-                                님으로 방을 만듭니다
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className='flex flex-col gap-4'>
-                            <Button
-                                onClick={handleCreateRoom}
-                                disabled={isLoading}
-                                className='w-full'
-                                size='lg'>
-                                {isLoading ? '생성 중...' : '방 생성하기'}
-                            </Button>
-                            <Button
-                                onClick={() => setMode('select')}
-                                disabled={isLoading}
-                                variant='ghost'
-                                className='w-full'>
-                                ← 돌아가기
-                            </Button>
-                        </CardContent>
-                    </>
-                )}
-
-                {mode === 'join' && (
-                    <>
-                        <CardHeader>
-                            <CardTitle>방 참가하기</CardTitle>
-                            <CardDescription>
-                                방 코드를 입력해주세요
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className='flex flex-col gap-4'>
-                            <Input
-                                type='text'
-                                placeholder='방 코드 (6자리)'
-                                value={roomCode}
-                                onChange={(e) =>
-                                    setRoomCode(e.target.value.toUpperCase())
-                                }
-                                className='text-center text-2xl font-bold tracking-widest'
-                                maxLength={6}
-                            />
-                            <Button
-                                onClick={handleJoinRoom}
-                                disabled={isLoading || roomCode.length !== 6}
-                                className='w-full'
-                                size='lg'>
-                                {isLoading ? '참가 중...' : '참가하기'}
-                            </Button>
-                            <Button
-                                onClick={() => setMode('select')}
-                                disabled={isLoading}
-                                variant='ghost'
-                                className='w-full'>
-                                ← 돌아가기
-                            </Button>
-                        </CardContent>
-                    </>
-                )}
-
-                {error && (
-                    <CardContent className='pt-0'>
-                        <p className='text-destructive text-center text-sm'>
-                            {error}
-                        </p>
-                    </CardContent>
-                )}
-            </Card>
-        </div>
+        </main>
     )
 }
