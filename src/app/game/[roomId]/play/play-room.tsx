@@ -7,6 +7,7 @@ import {
     type GameEvent,
 } from '@/contexts/realtime-context'
 import { useGameTimer } from '@/hooks/use-game-timer'
+import { formatTime } from '@/lib/date'
 import {
     finishMatch,
     GAME_DURATION,
@@ -18,7 +19,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import ConnectionIndicator from '../_components/connection-indicator'
 
-interface PlayClientProps {
+interface PlayRoomProps {
     matchId: string
     userId: string
     initialMatch: MatchWithPlayers
@@ -27,18 +28,22 @@ interface PlayClientProps {
     initialTimeLeft: number
 }
 
-const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
+export default function PlayRoom(props: PlayRoomProps) {
+    return (
+        <RealtimeProvider
+            roomId={props.matchId}
+            playerNumber={props.initialPlayer.player_order}>
+            <PlayRoomContent {...props} />
+        </RealtimeProvider>
+    )
 }
 
-function PlayInner({
+function PlayRoomContent({
     matchId,
     initialPlayer,
     initialOpponent,
     initialTimeLeft,
-}: PlayClientProps) {
+}: PlayRoomProps) {
     const router = useRouter()
     const { isConnected, sendScore, sendGameEnd, subscribe } =
         useRealtimeContext()
@@ -194,15 +199,5 @@ function PlayInner({
 
             <ConnectionIndicator isConnected={isConnected} />
         </div>
-    )
-}
-
-export default function PlayClient(props: PlayClientProps) {
-    return (
-        <RealtimeProvider
-            roomId={props.matchId}
-            playerNumber={props.initialPlayer.player_order}>
-            <PlayInner {...props} />
-        </RealtimeProvider>
     )
 }

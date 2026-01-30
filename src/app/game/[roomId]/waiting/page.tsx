@@ -1,7 +1,7 @@
 import { getMatch, getPlayerByUserId } from '@/lib/match'
 import { getServerUserId } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import WaitingClient from './waiting-client'
+import WaitingRoom from './waiting-room'
 
 interface Props {
     params: Promise<{ roomId: string }>
@@ -28,7 +28,7 @@ export default async function WaitingPage({ params }: Props) {
     }
 
     return (
-        <WaitingClient
+        <WaitingRoom
             matchId={roomId}
             userId={userId}
             initialMatch={match}

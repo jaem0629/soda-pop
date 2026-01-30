@@ -1,7 +1,7 @@
 import { getMatch, getPlayerByUserId } from '@/lib/match'
 import { getServerUserId } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import ResultClient from './result-client'
+import GameResult from './game-result'
 
 interface Props {
     params: Promise<{ roomId: string }>
@@ -30,7 +30,7 @@ export default async function ResultPage({ params }: Props) {
     const opponent = match.players.find((p) => p.user_id !== userId)
 
     return (
-        <ResultClient
+        <GameResult
             myPlayer={player!}
             opponent={opponent}
             myScore={player!.score}

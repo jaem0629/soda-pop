@@ -6,7 +6,7 @@ import {
 } from '@/lib/match'
 import { getServerUserId } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import PlayClient from './play-client'
+import PlayRoom from './play-room'
 
 interface Props {
     params: Promise<{ roomId: string }>
@@ -39,7 +39,7 @@ export default async function PlayPage({ params }: Props) {
     const opponent = match.players.find((p) => p.user_id !== userId)
 
     return (
-        <PlayClient
+        <PlayRoom
             matchId={roomId}
             userId={userId}
             initialMatch={match}

@@ -18,19 +18,29 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import ConnectionIndicator from '../_components/connection-indicator'
 
-interface WaitingClientProps {
+interface WaitingRoomProps {
     matchId: string
     userId: string
     initialMatch: MatchWithPlayers
     initialPlayer: MatchPlayer
 }
 
-function WaitingInner({
+export default function WaitingRoom(props: WaitingRoomProps) {
+    return (
+        <RealtimeProvider
+            roomId={props.matchId}
+            playerNumber={props.initialPlayer.player_order}>
+            <WaitingRoomContent {...props} />
+        </RealtimeProvider>
+    )
+}
+
+function WaitingRoomContent({
     matchId,
     userId,
     initialMatch,
     initialPlayer,
-}: WaitingClientProps) {
+}: WaitingRoomProps) {
     const router = useRouter()
     const { isConnected, sendGameStart, sendPlayerJoined, subscribe } =
         useRealtimeContext()
@@ -228,15 +238,5 @@ function WaitingInner({
 
             <ConnectionIndicator isConnected={isConnected} />
         </div>
-    )
-}
-
-export default function WaitingClient(props: WaitingClientProps) {
-    return (
-        <RealtimeProvider
-            roomId={props.matchId}
-            playerNumber={props.initialPlayer.player_order}>
-            <WaitingInner {...props} />
-        </RealtimeProvider>
     )
 }

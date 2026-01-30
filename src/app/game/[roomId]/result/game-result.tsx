@@ -5,19 +5,19 @@ import { Button } from '@/components/ui/button'
 import type { MatchPlayer } from '@/lib/match'
 import { useRouter } from 'next/navigation'
 
-interface ResultClientProps {
+interface GameResultProps {
     myPlayer: MatchPlayer
     opponent: MatchPlayer | undefined
     myScore: number
     opponentScore: number
 }
 
-export default function ResultClient({
+export default function GameResult({
     myPlayer,
     opponent,
     myScore,
     opponentScore,
-}: ResultClientProps) {
+}: GameResultProps) {
     const router = useRouter()
 
     const isWinner = myScore > opponentScore
