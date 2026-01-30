@@ -2,8 +2,8 @@
 
 import { GlassPanel } from '@/components/glass-panel'
 import { Button } from '@/components/ui/button'
-import type { MatchPlayer } from '@/lib/match'
 import { useRouter } from 'next/navigation'
+import type { MatchPlayer } from '../_lib/types'
 
 interface GameResultProps {
     myPlayer: MatchPlayer
@@ -49,7 +49,7 @@ export default function GameResult({
                     <div className='absolute inset-x-0 top-0 h-1 bg-linear-to-r from-transparent via-cyan-400 to-transparent opacity-70' />
 
                     {/* Result Header */}
-                    <div className='mb-6 space-y-2 text-center'>
+                    <div className='mb-4 gap-2 text-center'>
                         <h1
                             className={`text-5xl font-black tracking-tighter sm:text-6xl ${getResultColor()} ${getResultGlow()}`}>
                             {getResultText()}
@@ -158,7 +158,7 @@ export default function GameResult({
                         </h3>
                     </div>
 
-                    <div className='space-y-2 p-4'>
+                    <div className='gap-2 p-4'>
                         {/* Winner */}
                         <div
                             className={`flex items-center gap-4 rounded-xl p-3 ${

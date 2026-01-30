@@ -1,6 +1,6 @@
-import { getMatch, getPlayerByUserId } from '@/lib/match'
 import { getServerUserId } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { getMatch, getPlayerByUserId } from '../_lib/queries'
 import GameResult from './game-result'
 
 interface Props {

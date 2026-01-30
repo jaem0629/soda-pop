@@ -1,6 +1,7 @@
-import { getMatch, getPlayerByUserId } from '@/lib/match'
 import { getServerUserId } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { SingleConnectionGuard } from './_components/single-connection-guard'
+import { getMatch, getPlayerByUserId } from './_lib/queries'
 
 interface Props {
     children: React.ReactNode
@@ -28,5 +29,9 @@ export default async function GameLayout({ children, params }: Props) {
         redirect('/')
     }
 
-    return <>{children}</>
+    return (
+        <SingleConnectionGuard roomId={roomId} userId={userId}>
+            {children}
+        </SingleConnectionGuard>
+    )
 }

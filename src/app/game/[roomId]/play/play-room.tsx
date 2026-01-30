@@ -1,6 +1,5 @@
 'use client'
 
-import GameBoard from '@/components/game-board'
 import {
     RealtimeProvider,
     useRealtimeContext,
@@ -8,16 +7,12 @@ import {
 } from '@/contexts/realtime-context'
 import { useGameTimer } from '@/hooks/use-game-timer'
 import { formatTime } from '@/lib/date'
-import {
-    finishMatch,
-    GAME_DURATION,
-    updatePlayerScore,
-    type MatchPlayer,
-    type MatchWithPlayers,
-} from '@/lib/match'
 import { useRouter } from 'next/navigation'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import ConnectionIndicator from '../_components/connection-indicator'
+import GameBoard from '../_components/game-board'
+import { finishMatch, updatePlayerScore } from '../_lib/actions'
+import { GAME_DURATION, type MatchPlayer, type MatchWithPlayers } from '../_lib/types'
 
 interface PlayRoomProps {
     matchId: string

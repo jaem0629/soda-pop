@@ -1,6 +1,6 @@
 'use client'
 
-import { supabase } from '@/lib/supabase'
+import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import {
     createContext,
@@ -55,7 +55,8 @@ export function RealtimeProvider({
 
     // Setup channel
     useEffect(() => {
-        const channel = supabase.channel(`room:${roomId}`, {
+        const supabase = getSupabaseBrowserClient()
+        const channel = supabase.channel(`game:${roomId}`, {
             config: {
                 broadcast: { self: false },
             },

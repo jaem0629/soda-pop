@@ -7,16 +7,13 @@ import {
     useRealtimeContext,
     type GameEvent,
 } from '@/contexts/realtime-context'
-import {
-    getMatch,
-    leaveMatch,
-    startMatch,
-    type MatchPlayer,
-    type MatchWithPlayers,
-} from '@/lib/match'
+import { useRealtimeDB } from '@/hooks/use-realtime-db'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import ConnectionIndicator from '../_components/connection-indicator'
+import { getMatchClient } from '../_lib/client-queries'
+import { startMatch, leaveMatch } from '../_lib/actions'
+import type { MatchPlayer, MatchWithPlayers } from '../_lib/types'
 
 interface WaitingRoomProps {
     matchId: string
@@ -55,17 +52,25 @@ function WaitingRoomContent({
 
     // Reload match data
     const reloadMatch = useCallback(async () => {
-        const data = await getMatch(matchId)
+        const data = await getMatchClient(matchId)
         if (data) {
             setMatch(data)
         }
     }, [matchId])
 
-    // Handle realtime events
+    // DB 변경 감지 (플레이어 참가/퇴장)
+    useRealtimeDB({
+        table: 'match_players',
+        filter: `match_id=eq.${matchId}`,
+        onUpdate: reloadMatch,
+    })
+
+    // 게임 이벤트 처리
     useEffect(() => {
         const unsubscribe = subscribe((event: GameEvent) => {
             switch (event.type) {
                 case 'player_joined':
+                    // Broadcast 이벤트도 처리 (UX용)
                     reloadMatch()
                     break
                 case 'game_start':
@@ -83,12 +88,6 @@ function WaitingRoomContent({
             sendPlayerJoined(myPlayer.player_name)
         }
     }, [isConnected, isHost, sendPlayerJoined, myPlayer.player_name])
-
-    // Polling for waiting status
-    useEffect(() => {
-        const interval = setInterval(reloadMatch, 2000)
-        return () => clearInterval(interval)
-    }, [reloadMatch])
 
     // Leave match on unmount if host
     useEffect(() => {
@@ -114,6 +113,12 @@ function WaitingRoomContent({
         }
     }
 
+    // Leave match handler
+    const handleLeaveMatch = async () => {
+        await leaveMatch(matchId)
+        router.push('/lobby')
+    }
+
     return (
         <div className='flex flex-1 flex-col items-center justify-center p-4'>
             <GlassPanel className='w-full max-w-md p-8'>
@@ -136,7 +141,7 @@ function WaitingRoomContent({
                 </div>
 
                 {/* Players */}
-                <div className='mb-8 space-y-3'>
+                <div className='mb-8 gap-4'>
                     <h3 className='text-sm font-bold tracking-wider text-slate-400 uppercase'>
                         Players ({match.players.length}/{match.max_players})
                     </h3>
@@ -197,7 +202,7 @@ function WaitingRoomContent({
                 </div>
 
                 {/* Actions */}
-                <div className='space-y-3'>
+                <div className='gap-4'>
                     {canStart && (
                         <Button
                             onClick={handleStartGame}
@@ -229,7 +234,7 @@ function WaitingRoomContent({
 
                     <Button
                         variant='ghost'
-                        onClick={() => router.push('/lobby')}
+                        onClick={handleLeaveMatch}
                         className='w-full text-slate-400 hover:text-white'>
                         ← Back to Lobby
                     </Button>

@@ -1,4 +1,4 @@
-import type { GameMode } from '@/lib/match'
+import type { GameMode } from '@/app/game/[roomId]/_lib/types'
 
 export type ScoreType = 'individual' | 'team' | 'none'
 

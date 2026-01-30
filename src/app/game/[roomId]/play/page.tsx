@@ -1,11 +1,8 @@
-import {
-    calculateTimeLeft,
-    GAME_DURATION,
-    getMatch,
-    getPlayerByUserId,
-} from '@/lib/match'
 import { getServerUserId } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { getMatch, getPlayerByUserId } from '../_lib/queries'
+import { calculateTimeLeft } from '../_lib/utils'
+import { GAME_DURATION } from '../_lib/types'
 import PlayRoom from './play-room'
 
 interface Props {
