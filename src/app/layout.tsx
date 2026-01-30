@@ -1,8 +1,15 @@
-import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
-import { Analytics } from '@vercel/analytics/react'
-import { SpeedInsights } from '@vercel/speed-insights/next'
 import type { Metadata } from 'next'
+import dynamic from 'next/dynamic'
+
+const Analytics = dynamic(
+    () => import('@vercel/analytics/react').then((m) => m.Analytics),
+    { ssr: false }
+)
+const SpeedInsights = dynamic(
+    () => import('@vercel/speed-insights/next').then((m) => m.SpeedInsights),
+    { ssr: false }
+)
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 

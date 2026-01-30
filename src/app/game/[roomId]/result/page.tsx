@@ -4,22 +4,15 @@ import { useRouter } from 'next/navigation'
 import { useGameContext } from '@/contexts/game-context'
 import { GlassPanel } from '@/components/glass-panel'
 import { Button } from '@/components/ui/button'
+import LoadingSpinner from '../_components/loading-spinner'
 
 export default function ResultPage() {
     const router = useRouter()
 
-    const { myPlayer, opponent, isLoading, myScore, opponentScore } =
-        useGameContext()
+    const { myPlayer, opponent, myScore, opponentScore } = useGameContext()
 
-    if (!myPlayer || isLoading) {
-        return (
-            <div className='flex min-h-svh items-center justify-center'>
-                <div className='flex items-center gap-2 text-slate-400'>
-                    <div className='size-5 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent' />
-                    <span>Loading...</span>
-                </div>
-            </div>
-        )
+    if (!myPlayer) {
+        return <LoadingSpinner />
     }
 
     const isWinner = myScore > opponentScore

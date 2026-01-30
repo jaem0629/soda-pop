@@ -1,22 +1,22 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
-import { useGameContext } from '@/contexts/game-context'
 import { GlassPanel } from '@/components/glass-panel'
 import { Button } from '@/components/ui/button'
+import { useGameContext } from '@/contexts/game-context'
+import { useParams, useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import ConnectionIndicator from '../_components/connection-indicator'
+import LoadingSpinner from '../_components/loading-spinner'
 
 export default function WaitingPage() {
     const router = useRouter()
     const params = useParams()
-    const roomId = params.roomId as string
+    const { roomId } = params
 
     const {
         myPlayer,
         match,
         opponent,
-        isLoading,
         isConnected,
         canStart,
         gameStatus,
@@ -32,20 +32,11 @@ export default function WaitingPage() {
         }
     }, [gameStatus, roomId, router])
 
-    if (!myPlayer || isLoading || !match) {
-        return (
-            <div className='flex min-h-svh items-center justify-center'>
-                <div className='flex items-center gap-2 text-slate-400'>
-                    <div className='size-5 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent' />
-                    <span>Loading...</span>
-                </div>
-            </div>
-        )
+    if (!myPlayer || !match) {
+        return <LoadingSpinner />
     }
 
-    const isHost = match.players.find(
-        (p) => p.player_order === myPlayer.player_order
-    )?.is_host
+    const isHost = myPlayer.is_host
 
     return (
         <div className='flex flex-1 flex-col items-center justify-center p-4'>

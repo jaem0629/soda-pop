@@ -17,7 +17,6 @@ import {
     finishMatch,
     startMatch,
     leaveMatch,
-    getPlayerById,
     GAME_DURATION,
     type MatchWithPlayers,
     type MatchPlayer,
@@ -63,46 +62,18 @@ export function useGameContext() {
     return context
 }
 
-async function loadPlayerFromUrl(
-    playerId: string | null,
-    matchId: string
-): Promise<MatchPlayer | null> {
-    if (!playerId) return null
-
-    const player = await getPlayerById(playerId)
-    if (!player || player.match_id !== matchId) return null
-
-    return player
-}
-
-export function GameProvider({ children }: { children: ReactNode }) {
+export function GameProvider({
+    children,
+    initialPlayer,
+}: {
+    children: ReactNode
+    initialPlayer: MatchPlayer
+}) {
     const params = useParams()
     const router = useRouter()
     const searchParams = useSearchParams()
     const matchId = params.roomId as string
     const playerId = searchParams.get('player')
-
-    const [currentPlayer, setCurrentPlayer] = useState<MatchPlayer | null>(null)
-
-    // Load player from URL
-    useEffect(() => {
-        loadPlayerFromUrl(playerId, matchId).then((player) => {
-            setCurrentPlayer(player)
-        })
-    }, [playerId, matchId])
-
-    // Redirect if no player
-    useEffect(() => {
-        if (currentPlayer === null && playerId) {
-            // Only redirect if we tried to load but failed
-            const timer = setTimeout(() => {
-                if (!currentPlayer) {
-                    router.push('/')
-                }
-            }, 1000)
-            return () => clearTimeout(timer)
-        }
-    }, [currentPlayer, playerId, router])
 
     const {
         match,
@@ -113,13 +84,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         reload: reloadMatch,
     } = useMatchLoader({
         matchId,
-        playerOrder: currentPlayer?.player_order ?? 1,
+        playerOrder: initialPlayer.player_order,
     })
 
-    const restored = getRestoredGameState(
-        match,
-        currentPlayer?.player_order ?? 1
-    )
+    const restored = getRestoredGameState(match, initialPlayer.player_order)
 
     // Scores: null = server value, number = local change
     const [localMyScore, setLocalMyScore] = useState<number | null>(null)
@@ -152,7 +120,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
     }, [match?.status, restored.elapsedSeconds, timer])
 
-    // Realtime event handler
+    // Realtime event handler (useRealtime internally uses useEffectEvent for stable reference)
     const handleRealtimeEvent = (event: {
         type: string
         playerNumber?: number

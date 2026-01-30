@@ -5,6 +5,13 @@ import { useRouter, useParams } from 'next/navigation'
 import { useGameContext } from '@/contexts/game-context'
 import GameBoard from '@/components/game-board'
 import ConnectionIndicator from '../_components/connection-indicator'
+import LoadingSpinner from '../_components/loading-spinner'
+
+const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+}
 
 export default function PlayPage() {
     const router = useRouter()
@@ -15,7 +22,6 @@ export default function PlayPage() {
         myPlayer,
         match,
         opponent,
-        isLoading,
         isConnected,
         myScore,
         opponentScore,
@@ -34,21 +40,8 @@ export default function PlayPage() {
         }
     }, [gameStatus, isFinished, roomId, router])
 
-    if (!myPlayer || isLoading || !match) {
-        return (
-            <div className='flex min-h-svh items-center justify-center'>
-                <div className='flex items-center gap-2 text-slate-400'>
-                    <div className='size-5 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent' />
-                    <span>Loading...</span>
-                </div>
-            </div>
-        )
-    }
-
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60)
-        const secs = seconds % 60
-        return `${mins}:${secs.toString().padStart(2, '0')}`
+    if (!myPlayer || !match) {
+        return <LoadingSpinner />
     }
 
     return (

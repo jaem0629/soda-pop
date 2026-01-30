@@ -1,24 +1,16 @@
-'use client'
+import { redirect } from 'next/navigation'
 
-import { useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+type Props = {
+    params: Promise<{ roomId: string }>
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
 
-export default function GameRoomPage() {
-    const params = useParams()
-    const router = useRouter()
-    const roomId = params.roomId as string
+export default async function GameRoomPage({ params, searchParams }: Props) {
+    const { roomId } = await params
+    const search = await searchParams
+    const player = search.player
 
-    useEffect(() => {
-        // Redirect to waiting page
-        router.replace(`/game/${roomId}/waiting`)
-    }, [roomId, router])
-
-    return (
-        <div className='flex min-h-svh items-center justify-center'>
-            <div className='flex items-center gap-2 text-slate-400'>
-                <div className='size-5 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent' />
-                <span>Loading...</span>
-            </div>
-        </div>
-    )
+    // Preserve player query parameter
+    const queryString = player ? `?player=${player}` : ''
+    redirect(`/game/${roomId}/waiting${queryString}`)
 }
