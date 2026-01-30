@@ -27,6 +27,7 @@ function generateRoomCode(): string {
 
 export async function createMatch(
     playerName: string,
+    userId: string,
     mode: GameMode = 'battle',
     entryType: EntryType = 'private'
 ): Promise<{ match: Match; player: MatchPlayer } | null> {
@@ -54,6 +55,7 @@ export async function createMatch(
         .from('match_players')
         .insert({
             match_id: match.id,
+            user_id: userId,
             player_name: playerName,
             player_order: 1,
             is_host: true,
@@ -75,7 +77,8 @@ export async function createMatch(
 
 export async function joinMatch(
     code: string,
-    playerName: string
+    playerName: string,
+    userId: string
 ): Promise<{ match: Match; player: MatchPlayer; playerOrder: number } | null> {
     const { data: match, error: matchError } = await supabase
         .from('matches')
@@ -106,7 +109,8 @@ export async function joinMatch(
 
     const players = existingPlayers ?? []
 
-    const existingPlayer = players.find((p) => p.player_name === playerName)
+    // 같은 userId로 이미 참가한 경우 재연결
+    const existingPlayer = players.find((p) => p.user_id === userId)
     if (existingPlayer) {
         return {
             match,
@@ -130,6 +134,7 @@ export async function joinMatch(
         .from('match_players')
         .insert({
             match_id: match.id,
+            user_id: userId,
             player_name: playerName,
             player_order: nextOrder,
             is_host: false,
@@ -298,4 +303,35 @@ export function getOpponent(
     myOrder: number
 ): MatchPlayer | undefined {
     return players.find((p) => p.player_order !== myOrder)
+}
+
+/**
+ * 매치에서 특정 userId의 플레이어 찾기
+ */
+export async function getPlayerByUserId(
+    matchId: string,
+    userId: string
+): Promise<MatchPlayer | null> {
+    const { data, error } = await supabase
+        .from('match_players')
+        .select()
+        .eq('match_id', matchId)
+        .eq('user_id', userId)
+        .single()
+
+    if (error || !data) {
+        return null
+    }
+
+    return data
+}
+
+/**
+ * 플레이어 목록에서 userId로 플레이어 찾기 (로컬 검색)
+ */
+export function findPlayerByUserId(
+    players: MatchPlayer[],
+    userId: string
+): MatchPlayer | undefined {
+    return players.find((p) => p.user_id === userId)
 }

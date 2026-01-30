@@ -202,10 +202,10 @@ CREATE POLICY "matches_select" ON public.matches FOR SELECT USING (expired_at IS
 CREATE POLICY "matches_insert" ON public.matches FOR INSERT WITH CHECK (true);
 CREATE POLICY "matches_update" ON public.matches FOR UPDATE USING (expired_at IS NULL);
 
--- match_players: 자유 조회/생성
+-- match_players: 조회/생성 자유, 수정은 본인만
 CREATE POLICY "match_players_select" ON public.match_players FOR SELECT USING (true);
 CREATE POLICY "match_players_insert" ON public.match_players FOR INSERT WITH CHECK (true);
-CREATE POLICY "match_players_update" ON public.match_players FOR UPDATE USING (true);
+CREATE POLICY "match_players_update" ON public.match_players FOR UPDATE USING (auth.uid() = user_id);
 
 -- matchmaking_queue: 본인 큐만 관리
 -- TODO: auth.uid() 체크 추가
@@ -214,9 +214,9 @@ CREATE POLICY "queue_insert" ON public.matchmaking_queue FOR INSERT WITH CHECK (
 CREATE POLICY "queue_update" ON public.matchmaking_queue FOR UPDATE USING (true);
 CREATE POLICY "queue_delete" ON public.matchmaking_queue FOR DELETE USING (true);
 
--- rankings: 조회만 가능, 삽입은 서버에서
+-- rankings: 조회만 가능, 삽입은 서버(service_role)에서만
 CREATE POLICY "rankings_select" ON public.rankings FOR SELECT USING (true);
-CREATE POLICY "rankings_insert" ON public.rankings FOR INSERT WITH CHECK (true);
+CREATE POLICY "rankings_insert" ON public.rankings FOR INSERT WITH CHECK (auth.role() = 'service_role');
 
 -- ================================================
 -- 7. 함수

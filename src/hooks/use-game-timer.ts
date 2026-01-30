@@ -1,12 +1,12 @@
 'use client'
 
 import {
+    useCallback,
     useEffect,
     useEffectEvent,
-    useState,
-    useRef,
-    useCallback,
     useMemo,
+    useRef,
+    useState,
 } from 'react'
 
 type UseGameTimerProps = {

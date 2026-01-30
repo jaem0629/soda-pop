@@ -7,6 +7,7 @@ import { GlassPanel } from '@/components/glass-panel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createMatch, joinMatch } from '@/lib/match'
+import { ensureSignedIn } from './actions'
 
 type GameModeCard = {
     id: string
@@ -105,14 +106,26 @@ export default function LobbyPage() {
         setIsLoading(true)
         setError('')
 
-        const result = await createMatch(nickname.trim(), 'battle', 'private')
+        try {
+            // 1. 익명 로그인 및 프로필 생성
+            const { userId } = await ensureSignedIn(nickname.trim())
 
-        if (result) {
-            router.push(
-                `/game/${result.match.id}/waiting?player=${result.player.id}`
+            // 2. 매치 생성 (userId 포함)
+            const result = await createMatch(
+                nickname.trim(),
+                userId,
+                'battle',
+                'private'
             )
-        } else {
-            setError('방 생성에 실패했습니다')
+
+            if (result) {
+                router.push(`/game/${result.match.id}`)
+            } else {
+                setError('방 생성에 실패했습니다')
+                setIsLoading(false)
+            }
+        } catch {
+            setError('로그인에 실패했습니다')
             setIsLoading(false)
         }
     }
@@ -130,14 +143,25 @@ export default function LobbyPage() {
         setIsLoading(true)
         setError('')
 
-        const result = await joinMatch(roomCode.trim(), nickname.trim())
+        try {
+            // 1. 익명 로그인 및 프로필 생성
+            const { userId } = await ensureSignedIn(nickname.trim())
 
-        if (result) {
-            router.push(
-                `/game/${result.match.id}/waiting?player=${result.player.id}`
+            // 2. 매치 참가 (userId 포함)
+            const result = await joinMatch(
+                roomCode.trim(),
+                nickname.trim(),
+                userId
             )
-        } else {
-            setError('방에 참가할 수 없습니다. 코드를 확인해주세요.')
+
+            if (result) {
+                router.push(`/game/${result.match.id}`)
+            } else {
+                setError('방에 참가할 수 없습니다. 코드를 확인해주세요.')
+                setIsLoading(false)
+            }
+        } catch {
+            setError('로그인에 실패했습니다')
             setIsLoading(false)
         }
     }

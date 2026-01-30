@@ -1,16 +1,36 @@
+import { getMatch } from '@/lib/match'
+import { getServerUserId } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 
-type Props = {
+interface Props {
     params: Promise<{ roomId: string }>
-    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export default async function GameRoomPage({ params, searchParams }: Props) {
+/**
+ * Index page acts as a router - redirects to the appropriate page based on match status
+ */
+export default async function GameRoomPage({ params }: Props) {
     const { roomId } = await params
-    const search = await searchParams
-    const player = search.player
 
-    // Preserve player query parameter
-    const queryString = player ? `?player=${player}` : ''
-    redirect(`/game/${roomId}/waiting${queryString}`)
+    // Get userId from auth (layout already validated)
+    const userId = await getServerUserId()
+
+    // Get match (layout already validated it exists)
+    const match = await getMatch(roomId)
+
+    if (!match || !userId) {
+        redirect('/')
+    }
+
+    // Route based on match status
+    switch (match.status) {
+        case 'playing':
+            redirect(`/game/${roomId}/play`)
+        case 'finished':
+            redirect(`/game/${roomId}/result`)
+        case 'waiting':
+        case 'matching':
+        default:
+            redirect(`/game/${roomId}/waiting`)
+    }
 }

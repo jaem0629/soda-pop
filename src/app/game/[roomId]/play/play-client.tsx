@@ -1,0 +1,208 @@
+'use client'
+
+import GameBoard from '@/components/game-board'
+import {
+    RealtimeProvider,
+    useRealtimeContext,
+    type GameEvent,
+} from '@/contexts/realtime-context'
+import { useGameTimer } from '@/hooks/use-game-timer'
+import {
+    finishMatch,
+    GAME_DURATION,
+    updatePlayerScore,
+    type MatchPlayer,
+    type MatchWithPlayers,
+} from '@/lib/match'
+import { useRouter } from 'next/navigation'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import ConnectionIndicator from '../_components/connection-indicator'
+
+interface PlayClientProps {
+    matchId: string
+    userId: string
+    initialMatch: MatchWithPlayers
+    initialPlayer: MatchPlayer
+    initialOpponent: MatchPlayer | undefined
+    initialTimeLeft: number
+}
+
+const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function PlayInner({
+    matchId,
+    initialPlayer,
+    initialOpponent,
+    initialTimeLeft,
+}: PlayClientProps) {
+    const router = useRouter()
+    const { isConnected, sendScore, sendGameEnd, subscribe } =
+        useRealtimeContext()
+
+    // Local state
+    const [myScore, setMyScore] = useState(initialPlayer.score)
+    const [opponentScore, setOpponentScore] = useState(
+        initialOpponent?.score ?? 0
+    )
+    const gameEndSentRef = useRef(false)
+
+    // Timer
+    const timer = useGameTimer({
+        duration: GAME_DURATION,
+        onExpire: () => {
+            finishMatch(matchId)
+        },
+    })
+
+    // Start timer on mount with elapsed time
+    const startTimer = useEffectEvent(() => {
+        const elapsed = GAME_DURATION - initialTimeLeft
+        if (elapsed > 0) {
+            timer.start(elapsed)
+        } else {
+            timer.start()
+        }
+    })
+
+    useEffect(() => {
+        startTimer()
+    }, [])
+
+    // Handle realtime events
+    useEffect(() => {
+        const unsubscribe = subscribe((event: GameEvent) => {
+            switch (event.type) {
+                case 'score_update':
+                    if (event.playerNumber !== initialPlayer.player_order) {
+                        setOpponentScore(event.score)
+                    }
+                    break
+                case 'game_end':
+                    router.push(`/game/${matchId}/result`)
+                    break
+            }
+        })
+
+        return unsubscribe
+    }, [subscribe, initialPlayer.player_order, matchId, router])
+
+    // Send game end when timer expires
+    useEffect(() => {
+        if (timer.isExpired && !gameEndSentRef.current) {
+            gameEndSentRef.current = true
+            sendGameEnd()
+            router.push(`/game/${matchId}/result`)
+        }
+    }, [timer.isExpired, sendGameEnd, matchId, router])
+
+    // Handle score change
+    const handleScoreChange = (score: number) => {
+        setMyScore(score)
+        sendScore(score)
+        updatePlayerScore(matchId, initialPlayer.player_order, score)
+    }
+
+    return (
+        <div className='flex flex-1 flex-col'>
+            {/* Game Header */}
+            <header className='flex items-center justify-between border-b border-white/5 bg-[#0B1120]/80 px-4 py-3 backdrop-blur-md lg:px-6'>
+                {/* Left - My Score */}
+                <div className='flex items-center gap-3'>
+                    <div className='flex size-10 items-center justify-center rounded-full bg-linear-to-br from-cyan-500 to-blue-600 text-sm font-bold text-white shadow-lg'>
+                        {initialPlayer.player_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <p className='text-sm font-medium text-slate-400'>
+                            {initialPlayer.player_name}
+                        </p>
+                        <p className='text-2xl font-black text-cyan-400 tabular-nums'>
+                            {myScore.toLocaleString()}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Center - Timer */}
+                <div className='flex flex-col items-center'>
+                    <div
+                        className={`rounded-2xl border px-6 py-2 ${
+                            timer.timeLeft <= 10
+                                ? 'animate-pulse border-red-500/50 bg-red-500/20'
+                                : 'border-white/10 bg-[#162032]'
+                        }`}>
+                        <p
+                            className={`text-3xl font-black tabular-nums ${
+                                timer.timeLeft <= 10
+                                    ? 'text-red-400'
+                                    : 'text-white'
+                            }`}>
+                            {formatTime(timer.timeLeft)}
+                        </p>
+                    </div>
+                    <p className='mt-1 text-xs font-bold tracking-wider text-slate-500 uppercase'>
+                        Time Left
+                    </p>
+                </div>
+
+                {/* Right - Opponent Score */}
+                <div className='flex items-center gap-3'>
+                    <div className='text-right'>
+                        <p className='text-sm font-medium text-slate-400'>
+                            {initialOpponent?.player_name ?? 'Opponent'}
+                        </p>
+                        <p className='text-2xl font-black text-purple-400 tabular-nums'>
+                            {opponentScore.toLocaleString()}
+                        </p>
+                    </div>
+                    <div className='flex size-10 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-pink-600 text-sm font-bold text-white shadow-lg'>
+                        {initialOpponent?.player_name
+                            ?.charAt(0)
+                            .toUpperCase() ?? '?'}
+                    </div>
+                </div>
+            </header>
+
+            {/* Score Comparison Bar */}
+            <div className='border-b border-white/5 bg-[#162032]/50 px-4 py-2'>
+                <div className='flex h-3 overflow-hidden rounded-full bg-slate-800'>
+                    <div
+                        className='bg-linear-to-r from-cyan-500 to-cyan-400 transition-all duration-300'
+                        style={{
+                            width: `${Math.max(5, (myScore / (myScore + opponentScore || 1)) * 100)}%`,
+                        }}
+                    />
+                    <div
+                        className='bg-linear-to-r from-purple-400 to-purple-500 transition-all duration-300'
+                        style={{
+                            width: `${Math.max(5, (opponentScore / (myScore + opponentScore || 1)) * 100)}%`,
+                        }}
+                    />
+                </div>
+            </div>
+
+            {/* Game Board */}
+            <main className='flex flex-1 items-center justify-center p-4'>
+                <GameBoard
+                    onScoreChange={handleScoreChange}
+                    disabled={timer.isExpired}
+                    initialScore={myScore}
+                />
+            </main>
+
+            <ConnectionIndicator isConnected={isConnected} />
+        </div>
+    )
+}
+
+export default function PlayClient(props: PlayClientProps) {
+    return (
+        <RealtimeProvider
+            roomId={props.matchId}
+            playerNumber={props.initialPlayer.player_order}>
+            <PlayInner {...props} />
+        </RealtimeProvider>
+    )
+}

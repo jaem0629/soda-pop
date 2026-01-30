@@ -1,39 +1,32 @@
-import { GameProvider } from '@/contexts/game-context'
-import { getPlayerById } from '@/lib/match'
+import { getMatch, getPlayerByUserId } from '@/lib/match'
+import { getServerUserId } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { Suspense } from 'react'
-import LoadingSpinner from './_components/loading-spinner'
-
-type GameSearchParams = {
-    playerId?: string
-}
 
 interface Props {
     children: React.ReactNode
     params: Promise<{ roomId: string }>
-    searchParams: Promise<GameSearchParams>
 }
 
-export default async function GameLayout({
-    children,
-    params,
-    searchParams,
-}: Props) {
-    const [{ roomId }, { playerId }] = await Promise.all([params, searchParams])
+export default async function GameLayout({ children, params }: Props) {
+    const { roomId } = await params
 
-    if (!playerId) {
+    // Get userId from auth session
+    const userId = await getServerUserId()
+    if (!userId) {
         redirect('/')
     }
 
-    const player = await getPlayerById(playerId)
-
-    if (!player || player.match_id !== roomId) {
+    // Validate player exists and belongs to this match
+    const player = await getPlayerByUserId(roomId, userId)
+    if (!player) {
         redirect('/')
     }
 
-    return (
-        <Suspense fallback={<LoadingSpinner />}>
-            <GameProvider initialPlayer={player}>{children}</GameProvider>
-        </Suspense>
-    )
+    // Validate match exists and is not abandoned
+    const match = await getMatch(roomId)
+    if (!match || match.status === 'abandoned') {
+        redirect('/')
+    }
+
+    return <>{children}</>
 }
