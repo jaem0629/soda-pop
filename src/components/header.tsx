@@ -1,20 +1,19 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { Route } from 'next'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-type NavItem = {
-    href: string
+export interface NavItem {
+    href: Route
     label: string
 }
+interface HeaderProps {
+    navItems: NavItem[]
+}
 
-const navItems: NavItem[] = [
-    { href: '/', label: 'Home' },
-    { href: '/lobby', label: 'Lobby' },
-]
-
-export function Header() {
+export function Header({ navItems }: HeaderProps) {
     const pathname = usePathname()
 
     return (

@@ -1,15 +1,7 @@
-import { Header } from '@/components/header'
+import { Header, NavItem } from '@/components/header'
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import type { Metadata } from 'next'
-import dynamic from 'next/dynamic'
-
-const Analytics = dynamic(
-    () => import('@vercel/analytics/react').then((m) => m.Analytics),
-    { ssr: false }
-)
-const SpeedInsights = dynamic(
-    () => import('@vercel/speed-insights/next').then((m) => m.SpeedInsights),
-    { ssr: false }
-)
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 
@@ -28,6 +20,11 @@ export const metadata: Metadata = {
     description: 'Real-time 2-player puzzle battle game',
 }
 
+const NAV_ITEMS: NavItem[] = [
+    { href: '/', label: 'Home' },
+    { href: '/lobby', label: 'Lobby' },
+]
+
 export default function RootLayout({
     children,
 }: Readonly<{
@@ -37,7 +34,7 @@ export default function RootLayout({
         <html lang='ko' className='dark'>
             <body
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-                <Header />
+                <Header navItems={NAV_ITEMS} />
                 <div className='bg-background mx-auto flex min-h-svh max-w-6xl flex-col px-16'>
                     {children}
                 </div>

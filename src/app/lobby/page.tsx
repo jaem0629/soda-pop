@@ -168,8 +168,6 @@ export default function LobbyPage() {
 
     return (
         <div className='relative flex min-h-svh flex-col overflow-hidden bg-[#0B1120] text-white'>
-            <Header />
-
             <main className='relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-6 p-6 md:px-10 md:py-8'>
                 {/* Header */}
                 <div className='flex flex-wrap items-end justify-between gap-6'>
