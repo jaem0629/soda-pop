@@ -13,7 +13,7 @@ export default function WaitingPage() {
     const roomId = params.roomId as string
 
     const {
-        playerInfo,
+        myPlayer,
         match,
         opponent,
         isLoading,
@@ -32,7 +32,7 @@ export default function WaitingPage() {
         }
     }, [gameStatus, roomId, router])
 
-    if (!playerInfo || isLoading || !match) {
+    if (!myPlayer || isLoading || !match) {
         return (
             <div className='flex min-h-svh items-center justify-center'>
                 <div className='flex items-center gap-2 text-slate-400'>
@@ -44,7 +44,7 @@ export default function WaitingPage() {
     }
 
     const isHost = match.players.find(
-        (p) => p.player_order === playerInfo.playerOrder
+        (p) => p.player_order === myPlayer.player_order
     )?.is_host
 
     return (
@@ -81,8 +81,8 @@ export default function WaitingPage() {
                         </div>
                         <div className='flex-1'>
                             <p className='font-bold text-white'>
-                                {playerInfo.playerOrder === 1
-                                    ? playerInfo.nickname
+                                {myPlayer.player_order === 1
+                                    ? myPlayer.player_name
                                     : (opponent?.player_name ?? 'Waiting...')}
                             </p>
                             <p className='text-xs text-cyan-400'>Host</p>
@@ -93,24 +93,24 @@ export default function WaitingPage() {
                     {/* Player 2 */}
                     <div
                         className={`flex items-center gap-3 rounded-xl border p-3 ${
-                            opponent || playerInfo.playerOrder === 2
+                            opponent || myPlayer.player_order === 2
                                 ? 'border-white/10 bg-[#162032]'
                                 : 'border-dashed border-white/20 bg-transparent'
                         }`}>
                         <div
                             className={`flex size-10 items-center justify-center rounded-full font-bold ${
-                                opponent || playerInfo.playerOrder === 2
+                                opponent || myPlayer.player_order === 2
                                     ? 'bg-linear-to-br from-purple-500 to-pink-600 text-white'
                                     : 'bg-slate-800 text-slate-500'
                             }`}>
                             2
                         </div>
                         <div className='flex-1'>
-                            {opponent || playerInfo.playerOrder === 2 ? (
+                            {opponent || myPlayer.player_order === 2 ? (
                                 <>
                                     <p className='font-bold text-white'>
-                                        {playerInfo.playerOrder === 2
-                                            ? playerInfo.nickname
+                                        {myPlayer.player_order === 2
+                                            ? myPlayer.player_name
                                             : opponent?.player_name}
                                     </p>
                                     <p className='text-xs text-slate-400'>
@@ -123,7 +123,7 @@ export default function WaitingPage() {
                                 </p>
                             )}
                         </div>
-                        {(opponent || playerInfo.playerOrder === 2) && (
+                        {(opponent || myPlayer.player_order === 2) && (
                             <div className='size-3 rounded-full bg-green-400' />
                         )}
                     </div>

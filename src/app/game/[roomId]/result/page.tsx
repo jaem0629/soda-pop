@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button'
 export default function ResultPage() {
     const router = useRouter()
 
-    const { playerInfo, opponent, isLoading, myScore, opponentScore } =
+    const { myPlayer, opponent, isLoading, myScore, opponentScore } =
         useGameContext()
 
-    if (!playerInfo || isLoading) {
+    if (!myPlayer || isLoading) {
         return (
             <div className='flex min-h-svh items-center justify-center'>
                 <div className='flex items-center gap-2 text-slate-400'>
@@ -173,7 +173,7 @@ export default function ResultPage() {
                             </div>
                             <div className='flex size-10 items-center justify-center rounded-full bg-linear-to-br from-cyan-500 to-blue-600 font-bold text-white'>
                                 {isWinner
-                                    ? playerInfo.nickname
+                                    ? myPlayer.player_name
                                           .charAt(0)
                                           .toUpperCase()
                                     : (opponent?.player_name
@@ -183,7 +183,7 @@ export default function ResultPage() {
                             <div className='min-w-0 flex-1'>
                                 <p className='truncate font-bold text-white'>
                                     {isWinner
-                                        ? playerInfo.nickname
+                                        ? myPlayer.player_name
                                         : (opponent?.player_name ?? 'Opponent')}
                                 </p>
                             </div>
@@ -209,7 +209,7 @@ export default function ResultPage() {
                             </div>
                             <div className='flex size-10 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-pink-600 font-bold text-white'>
                                 {!isWinner
-                                    ? playerInfo.nickname
+                                    ? myPlayer.player_name
                                           .charAt(0)
                                           .toUpperCase()
                                     : (opponent?.player_name
@@ -219,7 +219,7 @@ export default function ResultPage() {
                             <div className='min-w-0 flex-1'>
                                 <p className='truncate font-bold text-white'>
                                     {!isWinner
-                                        ? playerInfo.nickname
+                                        ? myPlayer.player_name
                                         : (opponent?.player_name ?? 'Opponent')}
                                 </p>
                             </div>

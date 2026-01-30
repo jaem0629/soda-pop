@@ -8,7 +8,7 @@ import {
     useRef,
     type ReactNode,
 } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useRealtime } from '@/hooks/use-realtime'
 import { useGameTimer } from '@/hooks/use-game-timer'
 import { useMatchLoader, getRestoredGameState } from '@/hooks/use-match-loader'
@@ -17,22 +17,14 @@ import {
     finishMatch,
     startMatch,
     leaveMatch,
+    getPlayerById,
     GAME_DURATION,
     type MatchWithPlayers,
     type MatchPlayer,
+    MatchStatus,
 } from '@/lib/match'
 
-type PlayerInfo = {
-    matchId: string
-    playerId: string
-    playerOrder: number
-    nickname: string
-}
-
 type GameContextType = {
-    // Player Info
-    playerInfo: PlayerInfo | null
-
     // Match State
     match: MatchWithPlayers | null
     myPlayer: MatchPlayer | undefined
@@ -51,7 +43,7 @@ type GameContextType = {
     isConnected: boolean
 
     // Game Status
-    gameStatus: 'waiting' | 'playing' | 'finished' | 'abandoned'
+    gameStatus: MatchStatus
     isFinished: boolean
     canStart: boolean
 
@@ -71,36 +63,46 @@ export function useGameContext() {
     return context
 }
 
-function loadPlayerInfo(matchId: string): PlayerInfo | null {
-    if (typeof window === 'undefined') return null
+async function loadPlayerFromUrl(
+    playerId: string | null,
+    matchId: string
+): Promise<MatchPlayer | null> {
+    if (!playerId) return null
 
-    const stored = localStorage.getItem('player')
-    if (!stored) return null
+    const player = await getPlayerById(playerId)
+    if (!player || player.match_id !== matchId) return null
 
-    try {
-        const info = JSON.parse(stored) as PlayerInfo
-        if (info.matchId !== matchId) return null
-        return info
-    } catch {
-        return null
-    }
+    return player
 }
 
 export function GameProvider({ children }: { children: ReactNode }) {
     const params = useParams()
     const router = useRouter()
+    const searchParams = useSearchParams()
     const matchId = params.roomId as string
+    const playerId = searchParams.get('player')
 
-    const [playerInfo] = useState<PlayerInfo | null>(() =>
-        loadPlayerInfo(matchId)
-    )
+    const [currentPlayer, setCurrentPlayer] = useState<MatchPlayer | null>(null)
 
-    // Redirect if no player info
+    // Load player from URL
     useEffect(() => {
-        if (!playerInfo) {
-            router.push('/')
+        loadPlayerFromUrl(playerId, matchId).then((player) => {
+            setCurrentPlayer(player)
+        })
+    }, [playerId, matchId])
+
+    // Redirect if no player
+    useEffect(() => {
+        if (currentPlayer === null && playerId) {
+            // Only redirect if we tried to load but failed
+            const timer = setTimeout(() => {
+                if (!currentPlayer) {
+                    router.push('/')
+                }
+            }, 1000)
+            return () => clearTimeout(timer)
         }
-    }, [playerInfo, router])
+    }, [currentPlayer, playerId, router])
 
     const {
         match,
@@ -111,10 +113,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
         reload: reloadMatch,
     } = useMatchLoader({
         matchId,
-        playerOrder: playerInfo?.playerOrder ?? 1,
+        playerOrder: currentPlayer?.player_order ?? 1,
     })
 
-    const restored = getRestoredGameState(match, playerInfo?.playerOrder ?? 1)
+    const restored = getRestoredGameState(
+        match,
+        currentPlayer?.player_order ?? 1
+    )
 
     // Scores: null = server value, number = local change
     const [localMyScore, setLocalMyScore] = useState<number | null>(null)
@@ -162,16 +167,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
                 timer.reset()
                 timer.start()
                 reloadMatch()
-                router.push(`/game/${matchId}/play`)
+                router.push(`/game/${matchId}/play?player=${playerId}`)
                 break
             case 'score_update':
-                if (event.playerNumber !== playerInfo?.playerOrder) {
+                if (event.playerNumber !== myPlayer?.player_order) {
                     setLocalOpponentScore(event.score ?? 0)
                 }
                 break
             case 'game_end':
                 reloadMatch()
-                router.push(`/game/${matchId}/result`)
+                router.push(`/game/${matchId}/result?player=${playerId}`)
                 break
         }
     }
@@ -184,16 +189,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
         sendPlayerJoined,
     } = useRealtime({
         roomId: matchId,
-        playerNumber: playerInfo?.playerOrder ?? 1,
+        playerNumber: myPlayer?.player_order ?? 1,
         onEvent: handleRealtimeEvent,
     })
 
     // Send player joined event
     useEffect(() => {
-        if (playerInfo && playerInfo.playerOrder > 1 && isConnected) {
-            sendPlayerJoined(playerInfo.nickname)
+        if (myPlayer && myPlayer.player_order > 1 && isConnected) {
+            sendPlayerJoined(myPlayer.player_name)
         }
-    }, [playerInfo, isConnected, sendPlayerJoined])
+    }, [myPlayer, isConnected, sendPlayerJoined])
 
     // Send game end event
     const gameEndSentRef = useRef(false)
@@ -237,20 +242,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
             setMatch((prev) => (prev ? { ...prev, ...updatedMatch } : null))
             timer.start()
             sendGameStart()
-            router.push(`/game/${matchId}/play`)
+            router.push(`/game/${matchId}/play?player=${playerId}`)
         }
     }
 
     const handleScoreChange = (score: number) => {
         setLocalMyScore(score)
         sendScore(score)
-        if (playerInfo) {
-            updatePlayerScore(matchId, playerInfo.playerOrder, score)
+        if (myPlayer) {
+            updatePlayerScore(matchId, myPlayer.player_order, score)
         }
     }
 
     const navigateToResult = () => {
-        router.push(`/game/${matchId}/result`)
+        router.push(`/game/${matchId}/result?player=${playerId}`)
     }
 
     const gameStatus = match?.status ?? 'waiting'
@@ -260,7 +265,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
         (match?.players.length ?? 0) >= (match?.max_players ?? 2)
 
     const value: GameContextType = {
-        playerInfo,
         match,
         myPlayer,
         opponent,

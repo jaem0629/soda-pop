@@ -12,7 +12,7 @@ export default function PlayPage() {
     const roomId = params.roomId as string
 
     const {
-        playerInfo,
+        myPlayer,
         match,
         opponent,
         isLoading,
@@ -34,7 +34,7 @@ export default function PlayPage() {
         }
     }, [gameStatus, isFinished, roomId, router])
 
-    if (!playerInfo || isLoading || !match) {
+    if (!myPlayer || isLoading || !match) {
         return (
             <div className='flex min-h-svh items-center justify-center'>
                 <div className='flex items-center gap-2 text-slate-400'>
@@ -58,11 +58,11 @@ export default function PlayPage() {
                 {/* Left - My Score */}
                 <div className='flex items-center gap-3'>
                     <div className='flex size-10 items-center justify-center rounded-full bg-linear-to-br from-cyan-500 to-blue-600 text-sm font-bold text-white shadow-lg'>
-                        {playerInfo.nickname.charAt(0).toUpperCase()}
+                        {myPlayer.player_name.charAt(0).toUpperCase()}
                     </div>
                     <div>
                         <p className='text-sm font-medium text-slate-400'>
-                            {playerInfo.nickname}
+                            {myPlayer.player_name}
                         </p>
                         <p className='text-2xl font-black text-cyan-400 tabular-nums'>
                             {myScore.toLocaleString()}

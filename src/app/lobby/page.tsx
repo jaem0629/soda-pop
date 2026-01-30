@@ -108,16 +108,9 @@ export default function LobbyPage() {
         const result = await createMatch(nickname.trim(), 'battle', 'private')
 
         if (result) {
-            localStorage.setItem(
-                'player',
-                JSON.stringify({
-                    matchId: result.match.id,
-                    playerId: result.player.id,
-                    playerOrder: result.player.player_order,
-                    nickname: nickname.trim(),
-                })
+            router.push(
+                `/game/${result.match.id}/waiting?player=${result.player.id}`
             )
-            router.push(`/game/${result.match.id}/waiting`)
         } else {
             setError('방 생성에 실패했습니다')
             setIsLoading(false)
@@ -140,16 +133,9 @@ export default function LobbyPage() {
         const result = await joinMatch(roomCode.trim(), nickname.trim())
 
         if (result) {
-            localStorage.setItem(
-                'player',
-                JSON.stringify({
-                    matchId: result.match.id,
-                    playerId: result.player.id,
-                    playerOrder: result.playerOrder,
-                    nickname: nickname.trim(),
-                })
+            router.push(
+                `/game/${result.match.id}/waiting?player=${result.player.id}`
             )
-            router.push(`/game/${result.match.id}/waiting`)
         } else {
             setError('방에 참가할 수 없습니다. 코드를 확인해주세요.')
             setIsLoading(false)

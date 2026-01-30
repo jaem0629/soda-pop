@@ -180,6 +180,23 @@ export async function getMatch(
     }
 }
 
+export async function getPlayerById(
+    playerId: string
+): Promise<MatchPlayer | null> {
+    const { data: player, error } = await supabase
+        .from('match_players')
+        .select()
+        .eq('id', playerId)
+        .single()
+
+    if (error || !player) {
+        console.error('플레이어 조회 실패:', error)
+        return null
+    }
+
+    return player
+}
+
 export async function startMatch(matchId: string): Promise<Match | null> {
     const { data, error } = await supabase
         .from('matches')
