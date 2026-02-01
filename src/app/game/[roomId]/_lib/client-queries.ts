@@ -11,7 +11,7 @@ export async function getMatchClient(
     matchId: string
 ): Promise<MatchWithPlayers | null> {
     const supabase = getSupabaseBrowserClient()
-    
+
     const { data: match, error: matchError } = await supabase
         .from('matches')
         .select()

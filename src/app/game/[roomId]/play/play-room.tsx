@@ -12,7 +12,11 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import ConnectionIndicator from '../_components/connection-indicator'
 import GameBoard from '../_components/game-board'
 import { finishMatch, updatePlayerScore } from '../_lib/actions'
-import { GAME_DURATION, type MatchPlayer, type MatchWithPlayers } from '../_lib/types'
+import {
+    GAME_DURATION,
+    type MatchPlayer,
+    type MatchWithPlayers,
+} from '../_lib/types'
 
 interface PlayRoomProps {
     matchId: string
