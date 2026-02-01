@@ -70,7 +70,6 @@ export type Database = {
           code: string | null
           created_at: string | null
           entry_type: Database["public"]["Enums"]["entry_type"]
-          expired_at: string | null
           finished_at: string | null
           id: string
           max_players: number
@@ -83,7 +82,6 @@ export type Database = {
           code?: string | null
           created_at?: string | null
           entry_type: Database["public"]["Enums"]["entry_type"]
-          expired_at?: string | null
           finished_at?: string | null
           id?: string
           max_players?: number
@@ -96,7 +94,6 @@ export type Database = {
           code?: string | null
           created_at?: string | null
           entry_type?: Database["public"]["Enums"]["entry_type"]
-          expired_at?: string | null
           finished_at?: string | null
           id?: string
           max_players?: number

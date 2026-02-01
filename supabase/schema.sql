@@ -77,14 +77,13 @@ CREATE TABLE IF NOT EXISTS public.matches (
   -- 타임스탬프
   created_at TIMESTAMPTZ DEFAULT NOW(),
   started_at TIMESTAMPTZ,
-  finished_at TIMESTAMPTZ,
-  expired_at TIMESTAMPTZ DEFAULT NULL
+  finished_at TIMESTAMPTZ
 );
 
 -- 인덱스
 CREATE INDEX IF NOT EXISTS idx_matches_code ON public.matches(code) WHERE code IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_matches_status ON public.matches(status) WHERE expired_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_matches_mode_status ON public.matches(mode, status) WHERE expired_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_matches_status ON public.matches(status) WHERE status IN ('waiting', 'playing');
+CREATE INDEX IF NOT EXISTS idx_matches_mode_status ON public.matches(mode, status) WHERE status IN ('waiting', 'playing');
 
 -- ================================================
 -- 3. MATCH_PLAYERS 테이블 (N:M 관계)
@@ -197,10 +196,18 @@ CREATE POLICY "users_select" ON public.users FOR SELECT USING (true);
 CREATE POLICY "users_insert" ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "users_update" ON public.users FOR UPDATE USING (auth.uid() = id);
 
--- matches: 활성 매치 조회, 생성/수정 가능
-CREATE POLICY "matches_select" ON public.matches FOR SELECT USING (expired_at IS NULL);
+-- matches: 조회는 자유, 수정은 본인 참가 매치만
+CREATE POLICY "matches_select" ON public.matches FOR SELECT 
+  USING (true);
 CREATE POLICY "matches_insert" ON public.matches FOR INSERT WITH CHECK (true);
-CREATE POLICY "matches_update" ON public.matches FOR UPDATE USING (expired_at IS NULL);
+CREATE POLICY "matches_update" ON public.matches FOR UPDATE 
+  USING (
+    EXISTS (
+      SELECT 1 FROM match_playersO
+      WHERE match_id = matches.id
+        AND user_id = auth.uid()
+    )
+  );
 
 -- match_players: 조회/생성 자유, 수정은 본인만
 CREATE POLICY "match_players_select" ON public.match_players FOR SELECT USING (true);
@@ -222,7 +229,7 @@ CREATE POLICY "rankings_insert" ON public.rankings FOR INSERT WITH CHECK (auth.r
 -- 7. 함수
 -- ================================================
 
--- Cleanup 함수
+-- Cleanup 함수: 오래된 매치를 abandoned 상태로 변경
 CREATE OR REPLACE FUNCTION cleanup_old_matches()
 RETURNS void
 LANGUAGE plpgsql
@@ -230,22 +237,17 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  -- 게임 시작 후 10분 지난 매치 만료
+  -- 게임 시작 후 10분 지난 매치 → abandoned
   UPDATE matches 
-  SET expired_at = NOW(),
-      status = CASE 
-        WHEN status = 'playing' THEN 'abandoned'
-        ELSE status 
-      END
-  WHERE expired_at IS NULL
+  SET status = 'abandoned'
+  WHERE status = 'playing'
     AND started_at IS NOT NULL 
     AND started_at < NOW() - INTERVAL '10 minutes';
   
-  -- 대기 중 30분 지난 매치 만료
+  -- 대기 중 30분 지난 매치 → abandoned
   UPDATE matches 
-  SET expired_at = NOW()
-  WHERE expired_at IS NULL
-    AND started_at IS NULL 
+  SET status = 'abandoned'
+  WHERE status = 'waiting'
     AND created_at < NOW() - INTERVAL '30 minutes';
   
   -- 10분 이상 대기 중인 큐 취소
@@ -253,6 +255,7 @@ BEGIN
   SET status = 'cancelled'
   WHERE status = 'waiting'
     AND queued_at < NOW() - INTERVAL '10 minutes';
+    
 END;
 $$;
 

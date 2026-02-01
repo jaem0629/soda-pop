@@ -50,7 +50,7 @@ export async function createRoom(
         console.error('Player addition failed:', playerError)
         await supabase
             .from('matches')
-            .update({ expired_at: new Date().toISOString() })
+            .update({ status: 'abandoned' })
             .eq('id', match.id)
         return { success: false, error: 'Failed to create room' }
     }

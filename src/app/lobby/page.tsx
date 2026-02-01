@@ -15,10 +15,9 @@ export default async function LobbyPage() {
 
     const { data: activeMatch } = await supabase
         .from('matches')
-        .select('id, status, expired_at, match_players!inner(user_id)')
+        .select('id, status, match_players!inner(user_id)')
         .eq('match_players.user_id', user.id)
         .in('status', ['waiting', 'playing'])
-        .is('expired_at', null)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()

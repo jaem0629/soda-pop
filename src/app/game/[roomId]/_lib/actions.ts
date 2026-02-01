@@ -69,7 +69,7 @@ export async function leaveMatch(matchId: string): Promise<boolean> {
 
     const { error } = await supabase
         .from('matches')
-        .update({ expired_at: new Date().toISOString() })
+        .update({ status: 'abandoned' })
         .eq('id', matchId)
 
     if (error) {
