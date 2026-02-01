@@ -1,6 +1,13 @@
 'use client'
 
-import { useEffect, useEffectEvent, useState, useRef } from 'react'
+import {
+    useCallback,
+    useEffect,
+    useEffectEvent,
+    useMemo,
+    useRef,
+    useState,
+} from 'react'
 
 type UseGameTimerProps = {
     duration: number
@@ -31,22 +38,25 @@ export function useGameTimer({
         onExpire?.()
     })
 
-    const start = (elapsedSeconds: number = 0) => {
-        expiredRef.current = false
-        const now = Date.now()
-        setStartTime(now - elapsedSeconds * 1000)
-        setTimeLeft(Math.max(0, duration - elapsedSeconds))
-    }
+    const start = useCallback(
+        (elapsedSeconds: number = 0) => {
+            expiredRef.current = false
+            const now = Date.now()
+            setStartTime(now - elapsedSeconds * 1000)
+            setTimeLeft(Math.max(0, duration - elapsedSeconds))
+        },
+        [duration]
+    )
 
-    const stop = () => {
+    const stop = useCallback(() => {
         setStartTime(null)
-    }
+    }, [])
 
-    const reset = () => {
+    const reset = useCallback(() => {
         expiredRef.current = false
         setStartTime(null)
         setTimeLeft(duration)
-    }
+    }, [duration])
 
     useEffect(() => {
         if (startTime === null) return
@@ -65,12 +75,15 @@ export function useGameTimer({
         return () => clearInterval(timer)
     }, [startTime, duration])
 
-    return {
-        timeLeft,
-        isRunning,
-        isExpired,
-        start,
-        stop,
-        reset,
-    }
+    return useMemo(
+        () => ({
+            timeLeft,
+            isRunning,
+            isExpired,
+            start,
+            stop,
+            reset,
+        }),
+        [timeLeft, isRunning, isExpired, start, stop, reset]
+    )
 }
