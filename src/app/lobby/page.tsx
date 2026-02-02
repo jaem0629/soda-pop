@@ -13,24 +13,22 @@ export default async function LobbyPage() {
         redirect('/')
     }
 
-    const { data: activeMatch } = await supabase
-        .from('matches')
-        .select('id, status, match_players!inner(user_id)')
-        .eq('match_players.user_id', user.id)
-        .in('status', ['waiting', 'playing'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+    // Run queries in parallel
+    const [{ data: activeMatch }, { data: profile }] = await Promise.all([
+        supabase
+            .from('matches')
+            .select('id, status, match_players!inner(user_id)')
+            .eq('match_players.user_id', user.id)
+            .in('status', ['waiting', 'playing'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        supabase.from('users').select('username').eq('id', user.id).single(),
+    ])
 
     if (activeMatch) {
         redirect(`/game/${activeMatch.id}`)
     }
-
-    const { data: profile } = await supabase
-        .from('users')
-        .select('username')
-        .eq('id', user.id)
-        .single()
 
     const nickname = profile?.username ?? 'Guest'
 

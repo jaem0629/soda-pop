@@ -6,31 +6,29 @@ export async function getMatch(
 ): Promise<MatchWithPlayers | null> {
     const supabase = await createSupabaseServerClient()
 
-    const { data: match, error: matchError } = await supabase
-        .from('matches')
-        .select()
-        .eq('id', matchId)
-        .single()
+    // Run queries in parallel
+    const [matchResult, playersResult] = await Promise.all([
+        supabase.from('matches').select().eq('id', matchId).single(),
+        supabase
+            .from('match_players')
+            .select()
+            .eq('match_id', matchId)
+            .order('player_order', { ascending: true }),
+    ])
 
-    if (matchError || !match) {
-        console.error('매치 조회 실패:', matchError)
+    if (matchResult.error || !matchResult.data) {
+        console.error('Failed to fetch match:', matchResult.error)
         return null
     }
 
-    const { data: players, error: playersError } = await supabase
-        .from('match_players')
-        .select()
-        .eq('match_id', matchId)
-        .order('player_order', { ascending: true })
-
-    if (playersError) {
-        console.error('플레이어 조회 실패:', playersError)
+    if (playersResult.error) {
+        console.error('Failed to fetch players:', playersResult.error)
         return null
     }
 
     return {
-        ...match,
-        players: players ?? [],
+        ...matchResult.data,
+        players: playersResult.data ?? [],
     }
 }
 
@@ -46,7 +44,7 @@ export async function getPlayerById(
         .single()
 
     if (error || !player) {
-        console.error('플레이어 조회 실패:', error)
+        console.error('Failed to fetch player:', error)
         return null
     }
 

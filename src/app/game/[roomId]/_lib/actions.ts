@@ -17,7 +17,7 @@ export async function startMatch(matchId: string): Promise<Match | null> {
         .single()
 
     if (error) {
-        console.error('게임 시작 실패:', error)
+        console.error('Failed to start game:', error)
         return null
     }
 
@@ -38,7 +38,7 @@ export async function updatePlayerScore(
         .eq('player_order', playerOrder)
 
     if (error) {
-        console.error('점수 업데이트 실패:', error)
+        console.error('Failed to update score:', error)
         return false
     }
 
@@ -57,7 +57,7 @@ export async function finishMatch(matchId: string): Promise<boolean> {
         .eq('id', matchId)
 
     if (error) {
-        console.error('게임 종료 실패:', error)
+        console.error('Failed to finish game:', error)
         return false
     }
 
@@ -73,7 +73,7 @@ export async function leaveMatch(matchId: string): Promise<boolean> {
         .eq('id', matchId)
 
     if (error) {
-        console.error('매치 만료 실패:', error)
+        console.error('Failed to leave match:', error)
         return false
     }
 

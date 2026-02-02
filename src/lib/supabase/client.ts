@@ -10,7 +10,7 @@ export function createSupabaseBrowserClient() {
     )
 }
 
-// 싱글톤 인스턴스 (클라이언트 컴포넌트에서 재사용)
+// Singleton instance (reused across client components)
 let browserClient: ReturnType<typeof createSupabaseBrowserClient> | null = null
 
 export function getSupabaseBrowserClient() {
