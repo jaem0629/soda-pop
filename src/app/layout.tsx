@@ -1,6 +1,7 @@
 import { Header } from '@/app/_components/header'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { GeistSans } from 'geist/font/sans'
 import type { Metadata } from 'next'
 import './globals.css'
 
@@ -15,7 +16,7 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
     return (
-        <html lang='ko' className='dark'>
+        <html lang='ko' className={`${GeistSans.className} dark`}>
             <body className='antialiased'>
                 <Header />
                 <div className='bg-background mx-auto flex min-h-svh max-w-6xl flex-col px-16'>
