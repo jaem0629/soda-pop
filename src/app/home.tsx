@@ -13,11 +13,13 @@ import { signInAsGuest } from './actions'
 export function Home() {
     const [isPending, startTransition] = useTransition()
     const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+    const [showTurnstile, setShowTurnstile] = useState(false)
     const turnstileRef = useRef<TurnstileInstance | null>(null)
 
     const handleStartPlaying = () => {
         if (!captchaToken) {
-            // Wait for Turnstile to verify
+            // Show Turnstile on first click
+            setShowTurnstile(true)
             return
         }
 
@@ -52,7 +54,7 @@ export function Home() {
 
                     <button
                         onClick={handleStartPlaying}
-                        disabled={isPending || !captchaToken}
+                        disabled={isPending}
                         className='flex items-center gap-4 rounded-full bg-blue-600 px-8 py-4 text-lg font-bold transition-colors hover:bg-blue-500 disabled:opacity-50'>
                         {isPending ? (
                             <Loader2 className='animate-spin' />
@@ -62,12 +64,19 @@ export function Home() {
                         Start Playing
                     </button>
 
-                    <Turnstile
-                        ref={turnstileRef}
-                        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-                        onSuccess={handleTurnstileVerify}
-                        onError={handleTurnstileError}
-                    />
+                    {/* Turnstile - loads only when button is clicked */}
+                    {showTurnstile && (
+                        <div className='mt-4'>
+                            <Turnstile
+                                ref={turnstileRef}
+                                siteKey={
+                                    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!
+                                }
+                                onSuccess={handleTurnstileVerify}
+                                onError={handleTurnstileError}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <div className='mt-16 w-full'>
