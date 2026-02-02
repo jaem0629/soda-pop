@@ -13,12 +13,12 @@ export const PIECE_TYPES: PieceType[] = [0, 1, 2, 3, 4, 5]
 export const BASE_SCORE = 10
 
 export const PIECE_COLORS = [
-    '#FF4757', // 빨강
-    '#2ED573', // 초록
-    '#3742FA', // 파랑
-    '#FFA502', // 주황
-    '#A55EEA', // 보라
-    '#FF6B81', // 핑크
+    '#FF4757', // red
+    '#2ED573', // green
+    '#3742FA', // blue
+    '#FFA502', // orange
+    '#A55EEA', // purple
+    '#FF6B81', // pink
 ]
 
 export const PIECE_SHAPES = ['●', '◆', '★', '▲', '■', '♥']

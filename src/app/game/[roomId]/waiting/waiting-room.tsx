@@ -58,19 +58,19 @@ function WaitingRoomContent({
         }
     }, [matchId])
 
-    // DB 변경 감지 (플레이어 참가/퇴장)
+    // Listen for DB changes (player join/leave)
     useRealtimeDB({
         table: 'match_players',
         filter: `match_id=eq.${matchId}`,
         onUpdate: reloadMatch,
     })
 
-    // 게임 이벤트 처리
+    // Handle game events
     useEffect(() => {
         const unsubscribe = subscribe((event: GameEvent) => {
             switch (event.type) {
                 case 'player_joined':
-                    // Broadcast 이벤트도 처리 (UX용)
+                    // Handle broadcast events for UX
                     reloadMatch()
                     break
                 case 'game_start':

@@ -10,10 +10,9 @@ interface UseRealtimeDBOptions {
 }
 
 /**
- * DB 테이블의 변경사항을 실시간으로 감지하는 훅
+ * Hook to listen for realtime database changes
  *
  * @example
- * // match_players 테이블 감지
  * useRealtimeDB({
  *   table: 'match_players',
  *   filter: `match_id=eq.${matchId}`,

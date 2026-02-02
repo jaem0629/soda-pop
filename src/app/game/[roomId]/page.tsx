@@ -8,8 +8,12 @@ interface Props {
 
 export default async function GameRoomPage({ params }: Props) {
     const { roomId } = await params
-    const userId = await getServerUserId()
-    const match = await getMatch(roomId)
+
+    // Run queries in parallel
+    const [userId, match] = await Promise.all([
+        getServerUserId(),
+        getMatch(roomId),
+    ])
 
     if (!match || !userId) {
         redirect('/')

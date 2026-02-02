@@ -19,7 +19,7 @@ export async function createSupabaseServerClient() {
                             cookieStore.set(name, value, options)
                         )
                     } catch {
-                        // Server Component에서 호출 시 무시
+                        // Ignored when called from Server Component
                     }
                 },
             },

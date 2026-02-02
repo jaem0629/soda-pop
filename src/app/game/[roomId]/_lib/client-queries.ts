@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * 클라이언트 컴포넌트에서 사용하는 쿼리 함수들
- * (Realtime 업데이트 시 데이터 fetch)
+ * Query functions for client components
+ * (Used to fetch data on realtime updates)
  */
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import type { MatchWithPlayers } from './types'
@@ -19,7 +19,7 @@ export async function getMatchClient(
         .single()
 
     if (matchError || !match) {
-        console.error('매치 조회 실패:', matchError)
+        console.error('Failed to fetch match:', matchError)
         return null
     }
 
@@ -30,7 +30,7 @@ export async function getMatchClient(
         .order('player_order', { ascending: true })
 
     if (playersError) {
-        console.error('플레이어 조회 실패:', playersError)
+        console.error('Failed to fetch players:', playersError)
         return null
     }
 

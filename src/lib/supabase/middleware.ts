@@ -29,7 +29,7 @@ export async function updateSession(request: NextRequest) {
         }
     )
 
-    // 세션 갱신 (토큰 리프레시)
+    // Refresh session (token refresh)
     await supabase.auth.getUser()
 
     return supabaseResponse
