@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { getMatch, getPlayerByUserId } from '../_lib/queries'
 import GameResult from './game-result'
 
+export const runtime = 'edge'
+
 interface Props {
     params: Promise<{ roomId: string }>
 }

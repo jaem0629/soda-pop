@@ -5,6 +5,8 @@ import { calculateTimeLeft } from '../_lib/utils'
 import { GAME_DURATION } from '../_lib/types'
 import PlayRoom from './play-room'
 
+export const runtime = 'edge'
+
 interface Props {
     params: Promise<{ roomId: string }>
 }

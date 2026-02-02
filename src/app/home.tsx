@@ -2,22 +2,37 @@
 
 import { Footer } from '@/app/_components/footer'
 import { Separator } from '@/components/ui/separator'
-import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile'
 import { Gamepad2Icon, Loader2 } from 'lucide-react'
+import dynamic from 'next/dynamic'
 import { useRef, useState, useTransition } from 'react'
-import { MatchCard } from './_components/match-card'
-import { PopCard } from './_components/pop-card'
-import { WinCard } from './_components/win-card'
+import type { TurnstileInstance } from '@marsidev/react-turnstile'
 import { signInAsGuest } from './actions'
+
+// Lazy load heavy components (below the fold)
+const Turnstile = dynamic(
+    () => import('@marsidev/react-turnstile').then((mod) => mod.Turnstile),
+    { ssr: false }
+)
+const MatchCard = dynamic(() =>
+    import('./_components/match-card').then((mod) => ({ default: mod.MatchCard }))
+)
+const PopCard = dynamic(() =>
+    import('./_components/pop-card').then((mod) => ({ default: mod.PopCard }))
+)
+const WinCard = dynamic(() =>
+    import('./_components/win-card').then((mod) => ({ default: mod.WinCard }))
+)
 
 export function Home() {
     const [isPending, startTransition] = useTransition()
     const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+    const [showTurnstile, setShowTurnstile] = useState(false)
     const turnstileRef = useRef<TurnstileInstance | null>(null)
 
     const handleStartPlaying = () => {
         if (!captchaToken) {
-            // Wait for Turnstile to verify
+            // Show Turnstile on first click
+            setShowTurnstile(true)
             return
         }
 
@@ -52,7 +67,7 @@ export function Home() {
 
                     <button
                         onClick={handleStartPlaying}
-                        disabled={isPending || !captchaToken}
+                        disabled={isPending}
                         className='flex items-center gap-4 rounded-full bg-blue-600 px-8 py-4 text-lg font-bold transition-colors hover:bg-blue-500 disabled:opacity-50'>
                         {isPending ? (
                             <Loader2 className='animate-spin' />
@@ -62,12 +77,19 @@ export function Home() {
                         Start Playing
                     </button>
 
-                    <Turnstile
-                        ref={turnstileRef}
-                        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-                        onSuccess={handleTurnstileVerify}
-                        onError={handleTurnstileError}
-                    />
+                    {/* Turnstile - loads only when button is clicked */}
+                    {showTurnstile && (
+                        <div className='mt-4'>
+                            <Turnstile
+                                ref={turnstileRef}
+                                siteKey={
+                                    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!
+                                }
+                                onSuccess={handleTurnstileVerify}
+                                onError={handleTurnstileError}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <div className='mt-16 w-full'>

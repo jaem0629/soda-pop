@@ -3,7 +3,10 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-export async function signInAsGuest(nickname: string, captchaToken: string): Promise<void> {
+export async function signInAsGuest(
+    nickname: string,
+    captchaToken: string
+): Promise<void> {
     const supabase = await createSupabaseServerClient()
 
     let {

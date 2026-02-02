@@ -2,6 +2,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Lobby } from './lobby'
 
+export const runtime = 'edge'
+
 export default async function LobbyPage() {
     const supabase = await createSupabaseServerClient()
 
