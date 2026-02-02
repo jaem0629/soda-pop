@@ -53,6 +53,7 @@ function PlayRoomContent({
         initialOpponent?.score ?? 0
     )
     const gameEndSentRef = useRef(false)
+    const scoreRef = useRef(initialPlayer.score)
 
     // Timer
     const timer = useGameTimer({
@@ -86,6 +87,15 @@ function PlayRoomContent({
                     }
                     break
                 case 'game_end':
+                    // save my score if opponent ends the game first
+                    if (!gameEndSentRef.current) {
+                        gameEndSentRef.current = true
+                        updatePlayerScore(
+                            matchId,
+                            initialPlayer.player_order,
+                            scoreRef.current
+                        )
+                    }
                     router.push(`/game/${matchId}/result`)
                     break
             }
@@ -98,16 +108,28 @@ function PlayRoomContent({
     useEffect(() => {
         if (timer.isExpired && !gameEndSentRef.current) {
             gameEndSentRef.current = true
+            // save final score to database
+            updatePlayerScore(
+                matchId,
+                initialPlayer.player_order,
+                scoreRef.current
+            )
             sendGameEnd()
             router.push(`/game/${matchId}/result`)
         }
-    }, [timer.isExpired, sendGameEnd, matchId, router])
+    }, [
+        timer.isExpired,
+        sendGameEnd,
+        matchId,
+        router,
+        initialPlayer.player_order,
+    ])
 
-    // Handle score change
+    // Handle score change (save to database when game ends)
     const handleScoreChange = (score: number) => {
         setMyScore(score)
+        scoreRef.current = score
         sendScore(score)
-        updatePlayerScore(matchId, initialPlayer.player_order, score)
     }
 
     return (
