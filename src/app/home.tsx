@@ -32,6 +32,11 @@ export function Home() {
         setCaptchaToken(token)
     }
 
+    const handleTurnstileError = () => {
+        console.error('Turnstile verification failed')
+        setCaptchaToken(null)
+    }
+
     return (
         <main className='flex flex-1 flex-col items-center justify-center py-16'>
             <div className='flex w-full flex-col items-center gap-16'>
@@ -56,6 +61,13 @@ export function Home() {
                         )}
                         Start Playing
                     </button>
+
+                    <Turnstile
+                        ref={turnstileRef}
+                        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                        onSuccess={handleTurnstileVerify}
+                        onError={handleTurnstileError}
+                    />
                 </div>
 
                 <div className='mt-16 w-full'>
@@ -78,11 +90,6 @@ export function Home() {
                     contactUrl='#'
                 />
             </div>
-            <Turnstile
-                ref={turnstileRef}
-                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-                onSuccess={handleTurnstileVerify}
-            />
         </main>
     )
 }
