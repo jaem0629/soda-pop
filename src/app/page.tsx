@@ -1,43 +1,47 @@
-'use client'
-
-import { createSupabaseBrowserClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import { Home } from './home'
+import { Footer } from '@/app/_components/footer'
+import { LoginDialog } from '@/app/_components/login-dialog'
+import { Separator } from '@/components/ui/separator'
+import { MatchCard } from './_components/match-card'
+import { PopCard } from './_components/pop-card'
+import { WinCard } from './_components/win-card'
 
 export default function HomePage() {
-    const router = useRouter()
+    return (
+        <main className='flex flex-1 flex-col items-center justify-center py-16'>
+            <div className='flex w-full flex-col items-center gap-16'>
+                <div className='flex flex-col items-center gap-8 text-center'>
+                    <h1 className='bg-linear-to-b from-white to-blue-400 bg-clip-text text-9xl font-bold text-transparent'>
+                        SODA POP
+                    </h1>
 
-    useEffect(() => {
-        // Run auth check in background, don't block rendering
-        const checkAuth = async () => {
-            const supabase = createSupabaseBrowserClient()
-            const {
-                data: { user },
-            } = await supabase.auth.getUser()
+                    <p className='text-muted-foreground max-w-lg text-xl'>
+                        Connect, pop, and compete. Match colorful bubbles in
+                        real-time battles against friends.
+                    </p>
 
-            if (user) {
-                const { data: activeMatch } = await supabase
-                    .from('matches')
-                    .select('id, status, match_players!inner(user_id)')
-                    .eq('match_players.user_id', user.id)
-                    .in('status', ['waiting', 'playing'])
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle()
+                    <LoginDialog />
+                </div>
 
-                if (activeMatch) {
-                    router.push(`/game/${activeMatch.id}`)
-                    return
-                }
+                <div className='mt-16 w-full'>
+                    <h2 className='text-muted-foreground mb-8 text-center font-semibold tracking-widest'>
+                        HOW TO PLAY
+                    </h2>
 
-                router.push('/lobby')
-            }
-        }
+                    <div className='grid grid-cols-1 place-items-center gap-8 lg:grid-cols-3'>
+                        <MatchCard />
+                        <PopCard />
+                        <WinCard />
+                    </div>
+                </div>
 
-        checkAuth()
-    }, [router])
+                <Separator />
 
-    // Always show content immediately for better LCP
-    return <Home />
+                <Footer
+                    privacyPolicyUrl='#'
+                    termsOfServiceUrl='#'
+                    contactUrl='#'
+                />
+            </div>
+        </main>
+    )
 }
