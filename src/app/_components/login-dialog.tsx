@@ -10,30 +10,17 @@ import {
 } from '@/components/ui/dialog'
 import type { TurnstileInstance } from '@marsidev/react-turnstile'
 import { Turnstile } from '@marsidev/react-turnstile'
-import { Gamepad2Icon, Loader2 } from 'lucide-react'
-import { useRef, useState, useTransition } from 'react'
+import { Gamepad2Icon } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { signInAsGuest } from '../actions'
 
 export function LoginDialog() {
-    const [isPending, startTransition] = useTransition()
-    const [captchaToken, setCaptchaToken] = useState<string | null>(null)
     const [showGuestLogin, setShowGuestLogin] = useState(false)
     const turnstileRef = useRef<TurnstileInstance | null>(null)
 
     const handleGuestLogin = () => {
+        // Show Turnstile immediately when guest login is selected
         setShowGuestLogin(true)
-    }
-
-    const handleGuestSignIn = () => {
-        if (!captchaToken) {
-            return
-        }
-
-        startTransition(async () => {
-            const randomNum = Math.floor(Math.random() * 10000)
-            const randomNickname = `Guest_${randomNum.toString().padStart(4, '0')}`
-            await signInAsGuest(randomNickname, captchaToken)
-        })
     }
 
     const handleSSOLogin = () => {
@@ -41,13 +28,13 @@ export function LoginDialog() {
         alert('SSO login coming soon!')
     }
 
-    const handleTurnstileVerify = (token: string) => {
-        setCaptchaToken(token)
-    }
-
-    const handleTurnstileError = () => {
-        // Silently handle error (expected in Lighthouse/automated tests)
-        setCaptchaToken(null)
+    const handleTurnstileVerify = async (token: string) => {
+        // Auto-login when Turnstile verification completes
+        // Generate unique nickname using UUID (no duplicates possible)
+        const uuid = crypto.randomUUID()
+        const uniqueId = uuid.split('-')[0] // First 8 characters
+        const randomNickname = `Guest_${uniqueId}`
+        await signInAsGuest(randomNickname, token)
     }
 
     return (
@@ -107,36 +94,15 @@ export function LoginDialog() {
                             </button>
                         </>
                     ) : (
-                        <>
-                            {/* Turnstile Verification */}
-                            <div className='space-y-4'>
-                                <p className='text-muted-foreground text-center text-sm'>
-                                    Please verify you&apos;re human
-                                </p>
-                                <div className='flex justify-center'>
-                                    <Turnstile
-                                        ref={turnstileRef}
-                                        siteKey={
-                                            process.env
-                                                .NEXT_PUBLIC_TURNSTILE_SITE_KEY!
-                                        }
-                                        onSuccess={handleTurnstileVerify}
-                                        onError={handleTurnstileError}
-                                    />
-                                </div>
-                                <button
-                                    onClick={handleGuestSignIn}
-                                    disabled={isPending || !captchaToken}
-                                    className='flex w-full items-center justify-center gap-3 rounded-lg bg-blue-600 px-6 py-3 font-medium transition-colors hover:bg-blue-500 disabled:opacity-50'>
-                                    {isPending ? (
-                                        <Loader2 className='h-5 w-5 animate-spin' />
-                                    ) : (
-                                        <Gamepad2Icon className='h-5 w-5' />
-                                    )}
-                                    Start Playing
-                                </button>
-                            </div>
-                        </>
+                        <div className='flex h-32 flex-col items-center justify-center gap-4'>
+                            <Turnstile
+                                ref={turnstileRef}
+                                siteKey={
+                                    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!
+                                }
+                                onSuccess={handleTurnstileVerify}
+                            />
+                        </div>
                     )}
                 </div>
             </DialogContent>
