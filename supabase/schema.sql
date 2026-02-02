@@ -1,24 +1,24 @@
 -- ================================================
 -- SODA-POP Database Schema
--- 확장된 게임 모드 지원
+-- Extended game mode support
 -- ================================================
 
 -- ================================================
--- 게임 모드 정의
+-- Game Mode Definitions
 -- ================================================
 -- 
--- | 모드    | 인원  | 참여 방식              |
--- |---------|-------|------------------------|
--- | solo    | 1     | 바로 시작              |
--- | battle  | 2     | private / matchmaking  |
--- | coop    | 4     | private / matchmaking  |
--- | custom  | 2~8   | private only           |
+-- | Mode    | Players | Entry Type             |
+-- |---------|---------|------------------------|
+-- | solo    | 1       | instant start          |
+-- | battle  | 2       | private / matchmaking  |
+-- | coop    | 4       | private / matchmaking  |
+-- | custom  | 2~8     | private only           |
 --
 -- ================================================
 
 -- ================================================
--- 1. USERS 테이블
--- Supabase Auth와 연동
+-- 1. USERS Table
+-- Integrated with Supabase Auth
 -- ================================================
 
 -- TODO: Supabase Auth 설정 후 활성화
@@ -28,14 +28,14 @@ CREATE TABLE IF NOT EXISTS public.users (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 인덱스: 유저네임 검색
+-- Index: username search
 CREATE INDEX IF NOT EXISTS idx_users_username ON public.users(username);
 
 -- ================================================
--- 2. MATCHES 테이블
+-- 2. MATCHES Table
 -- ================================================
 
--- 게임 모드 enum
+-- Game mode enum
 DO $$
 BEGIN
   CREATE TYPE game_mode AS ENUM ('solo', 'battle', 'coop', 'custom');
@@ -43,7 +43,7 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
--- 참여 방식 enum
+-- Entry type enum
 DO $$
 BEGIN
   CREATE TYPE entry_type AS ENUM ('private', 'matchmaking');
@@ -51,7 +51,7 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
--- 매치 상태 enum
+-- Match status enum
 DO $$
 BEGIN
   CREATE TYPE match_status AS ENUM ('waiting', 'matching', 'playing', 'finished', 'abandoned');
@@ -62,64 +62,64 @@ END $$;
 CREATE TABLE IF NOT EXISTS public.matches (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
-  -- 게임 설정
+  -- Game settings
   mode game_mode NOT NULL,
   entry_type entry_type NOT NULL,
-  code VARCHAR(6) UNIQUE,  -- private 전용, matchmaking은 NULL
+  code VARCHAR(6) UNIQUE,  -- private only, NULL for matchmaking
   
-  -- 인원 설정
+  -- Player settings
   max_players INT NOT NULL DEFAULT 2,
-  team_size INT,  -- coop: 2, 나머지: NULL
+  team_size INT,  -- coop: 2, others: NULL
   
-  -- 상태
+  -- Status
   status match_status NOT NULL DEFAULT 'waiting',
   
-  -- 타임스탬프
+  -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW(),
   started_at TIMESTAMPTZ,
   finished_at TIMESTAMPTZ
 );
 
--- 인덱스
+-- Indexes
 CREATE INDEX IF NOT EXISTS idx_matches_code ON public.matches(code) WHERE code IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_matches_status ON public.matches(status) WHERE status IN ('waiting', 'playing');
 CREATE INDEX IF NOT EXISTS idx_matches_mode_status ON public.matches(mode, status) WHERE status IN ('waiting', 'playing');
 
 -- ================================================
--- 3. MATCH_PLAYERS 테이블 (N:M 관계)
+-- 3. MATCH_PLAYERS Table (N:M relationship)
 -- ================================================
 
 CREATE TABLE IF NOT EXISTS public.match_players (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   match_id UUID NOT NULL REFERENCES public.matches(id) ON DELETE CASCADE,
   
-  -- 플레이어 정보
-  user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,  -- 익명은 NULL
-  player_name VARCHAR(20) NOT NULL,  -- 표시 이름
+  -- Player info
+  user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,  -- NULL for anonymous
+  player_name VARCHAR(20) NOT NULL,  -- Display name
   
-  -- 게임 내 정보
-  player_order INT NOT NULL,  -- 입장 순서 (1, 2, 3...)
-  team_number INT,  -- coop: 1 또는 2, 나머지: NULL
+  -- In-game info
+  player_order INT NOT NULL,  -- Join order (1, 2, 3...)
+  team_number INT,  -- coop: 1 or 2, others: NULL
   score INT NOT NULL DEFAULT 0,
   
-  -- 역할
+  -- Role
   is_host BOOLEAN NOT NULL DEFAULT FALSE,
   
-  -- 타임스탬프
+  -- Timestamps
   joined_at TIMESTAMPTZ DEFAULT NOW(),
   
   UNIQUE(match_id, player_order)
 );
 
--- 인덱스
+-- Indexes
 CREATE INDEX IF NOT EXISTS idx_match_players_match ON public.match_players(match_id);
 CREATE INDEX IF NOT EXISTS idx_match_players_user ON public.match_players(user_id) WHERE user_id IS NOT NULL;
 
 -- ================================================
--- 4. MATCHMAKING_QUEUE 테이블
+-- 4. MATCHMAKING_QUEUE Table
 -- ================================================
 
--- 매칭 큐 상태 enum
+-- Queue status enum
 DO $$
 BEGIN
   CREATE TYPE queue_status AS ENUM ('waiting', 'matched', 'cancelled');
@@ -130,56 +130,56 @@ END $$;
 CREATE TABLE IF NOT EXISTS public.matchmaking_queue (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
-  -- 플레이어/팀 정보
+  -- Player/team info
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-  player_name VARCHAR(20) NOT NULL,  -- 익명용
+  player_name VARCHAR(20) NOT NULL,  -- For anonymous users
   
-  -- 매칭 설정
-  mode game_mode NOT NULL,  -- battle 또는 coop
-  team_id UUID,  -- coop private: 팀 식별자 (같은 team_id끼리 한 팀)
+  -- Matchmaking settings
+  mode game_mode NOT NULL,  -- battle or coop
+  team_id UUID,  -- coop private: team identifier (same team_id forms a team)
   
-  -- 상태
+  -- Status
   status queue_status DEFAULT 'waiting',
   matched_match_id UUID REFERENCES public.matches(id),
   
-  -- 타임스탬프
+  -- Timestamps
   queued_at TIMESTAMPTZ DEFAULT NOW(),
   matched_at TIMESTAMPTZ
 );
 
--- 인덱스: 대기 중인 플레이어 찾기
+-- Index: Find waiting players
 CREATE INDEX IF NOT EXISTS idx_queue_waiting ON public.matchmaking_queue(mode, status, queued_at) 
   WHERE status = 'waiting';
 
 -- ================================================
--- 5. RANKINGS 테이블
+-- 5. RANKINGS Table
 -- ================================================
 
 CREATE TABLE IF NOT EXISTS public.rankings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
-  -- 게임 정보
+  -- Game info
   mode game_mode NOT NULL,
   match_id UUID REFERENCES public.matches(id) ON DELETE SET NULL,
   
-  -- 플레이어 정보 (협동은 복수)
+  -- Player info (multiple for coop)
   user_ids UUID[] NOT NULL,
-  player_names VARCHAR(20)[] NOT NULL,  -- 표시용
+  player_names VARCHAR(20)[] NOT NULL,  -- For display
   
-  -- 결과
+  -- Results
   score INT NOT NULL,
-  is_winner BOOLEAN DEFAULT FALSE,  -- battle/coop에서 승리 여부
+  is_winner BOOLEAN DEFAULT FALSE,  -- Winner in battle/coop
   
-  -- 타임스탬프
+  -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 인덱스: 모드별 랭킹 조회
+-- Index: Ranking lookup by mode
 CREATE INDEX IF NOT EXISTS idx_rankings_mode_score ON public.rankings(mode, score DESC);
 CREATE INDEX IF NOT EXISTS idx_rankings_user ON public.rankings USING GIN(user_ids);
 
 -- ================================================
--- 6. RLS 정책
+-- 6. RLS Policies
 -- ================================================
 
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
@@ -188,48 +188,48 @@ ALTER TABLE public.match_players ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.matchmaking_queue ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rankings ENABLE ROW LEVEL SECURITY;
 
--- TODO: 상세 RLS 정책 정의
--- 현재는 개발용으로 열어둠
+-- TODO: Define detailed RLS policies
+-- Currently open for development
 
--- users: 본인 정보만 수정 가능
+-- users: Can only modify own data
 CREATE POLICY "users_select" ON public.users FOR SELECT USING (true);
 CREATE POLICY "users_insert" ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "users_update" ON public.users FOR UPDATE USING (auth.uid() = id);
 
--- matches: 조회는 자유, 수정은 본인 참가 매치만
+-- matches: Free to read, can only update own matches
 CREATE POLICY "matches_select" ON public.matches FOR SELECT 
   USING (true);
 CREATE POLICY "matches_insert" ON public.matches FOR INSERT WITH CHECK (true);
 CREATE POLICY "matches_update" ON public.matches FOR UPDATE 
   USING (
     EXISTS (
-      SELECT 1 FROM match_playersO
+      SELECT 1 FROM match_players
       WHERE match_id = matches.id
         AND user_id = auth.uid()
     )
   );
 
--- match_players: 조회/생성 자유, 수정은 본인만
+-- match_players: Free to read/create, can only update own data
 CREATE POLICY "match_players_select" ON public.match_players FOR SELECT USING (true);
 CREATE POLICY "match_players_insert" ON public.match_players FOR INSERT WITH CHECK (true);
 CREATE POLICY "match_players_update" ON public.match_players FOR UPDATE USING (auth.uid() = user_id);
 
--- matchmaking_queue: 본인 큐만 관리
+-- matchmaking_queue: Can only manage own queue
 -- TODO: auth.uid() 체크 추가
 CREATE POLICY "queue_select" ON public.matchmaking_queue FOR SELECT USING (true);
 CREATE POLICY "queue_insert" ON public.matchmaking_queue FOR INSERT WITH CHECK (true);
 CREATE POLICY "queue_update" ON public.matchmaking_queue FOR UPDATE USING (true);
 CREATE POLICY "queue_delete" ON public.matchmaking_queue FOR DELETE USING (true);
 
--- rankings: 조회만 가능, 삽입은 서버(service_role)에서만
+-- rankings: Read-only, insert only from server (service_role)
 CREATE POLICY "rankings_select" ON public.rankings FOR SELECT USING (true);
 CREATE POLICY "rankings_insert" ON public.rankings FOR INSERT WITH CHECK (auth.role() = 'service_role');
 
 -- ================================================
--- 7. 함수
+-- 7. Functions
 -- ================================================
 
--- Cleanup 함수: 오래된 매치를 abandoned 상태로 변경
+-- Cleanup function: Mark old matches as abandoned
 CREATE OR REPLACE FUNCTION cleanup_old_matches()
 RETURNS void
 LANGUAGE plpgsql
@@ -237,20 +237,20 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  -- 게임 시작 후 10분 지난 매치 → abandoned
+  -- Mark matches as abandoned if playing for over 10 minutes
   UPDATE matches 
   SET status = 'abandoned'
   WHERE status = 'playing'
     AND started_at IS NOT NULL 
     AND started_at < NOW() - INTERVAL '10 minutes';
   
-  -- 대기 중 30분 지난 매치 → abandoned
+  -- Mark matches as abandoned if waiting for over 30 minutes
   UPDATE matches 
   SET status = 'abandoned'
   WHERE status = 'waiting'
     AND created_at < NOW() - INTERVAL '30 minutes';
   
-  -- 10분 이상 대기 중인 큐 취소
+  -- Cancel queue entries waiting for over 10 minutes
   UPDATE matchmaking_queue
   SET status = 'cancelled'
   WHERE status = 'waiting'
@@ -259,11 +259,11 @@ BEGIN
 END;
 $$;
 
--- TODO: 매칭 함수 (Edge Function으로 구현 권장)
+-- TODO: Matchmaking function (recommended to implement as Edge Function)
 -- CREATE OR REPLACE FUNCTION process_matchmaking()
 
 -- ================================================
--- 8. Realtime 활성화
+-- 8. Enable Realtime
 -- ================================================
 
 DO $$

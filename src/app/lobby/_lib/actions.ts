@@ -1,6 +1,7 @@
 'use server'
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
 export async function createRoom(
     playerName: string
@@ -135,4 +136,10 @@ export async function getAuthUserId(): Promise<string | null> {
         data: { user },
     } = await supabase.auth.getUser()
     return user?.id ?? null
+}
+
+export async function signOut(): Promise<void> {
+    const supabase = await createSupabaseServerClient()
+    await supabase.auth.signOut()
+    redirect('/')
 }

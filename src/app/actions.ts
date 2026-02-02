@@ -3,7 +3,7 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-export async function signInAsGuest(nickname: string): Promise<void> {
+export async function signInAsGuest(nickname: string, captchaToken: string): Promise<void> {
     const supabase = await createSupabaseServerClient()
 
     let {
@@ -11,7 +11,11 @@ export async function signInAsGuest(nickname: string): Promise<void> {
     } = await supabase.auth.getUser()
 
     if (!user) {
-        const { data, error } = await supabase.auth.signInAnonymously()
+        const { data, error } = await supabase.auth.signInAnonymously({
+            options: {
+                captchaToken: captchaToken,
+            },
+        })
         if (error || !data.user) {
             console.error('Anonymous sign-in failed:', error)
             throw new Error('Sign-in failed')

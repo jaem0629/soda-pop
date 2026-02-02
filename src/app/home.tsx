@@ -2,8 +2,9 @@
 
 import { Footer } from '@/app/_components/footer'
 import { Separator } from '@/components/ui/separator'
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile'
 import { Gamepad2Icon, Loader2 } from 'lucide-react'
-import { useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { MatchCard } from './_components/match-card'
 import { PopCard } from './_components/pop-card'
 import { WinCard } from './_components/win-card'
@@ -11,13 +12,24 @@ import { signInAsGuest } from './actions'
 
 export function Home() {
     const [isPending, startTransition] = useTransition()
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+    const turnstileRef = useRef<TurnstileInstance | null>(null)
 
     const handleStartPlaying = () => {
+        if (!captchaToken) {
+            // Wait for Turnstile to verify
+            return
+        }
+
         startTransition(async () => {
             const randomNum = Math.floor(Math.random() * 10000)
             const randomNickname = `Guest_${randomNum.toString().padStart(4, '0')}`
-            await signInAsGuest(randomNickname)
+            await signInAsGuest(randomNickname, captchaToken)
         })
+    }
+
+    const handleTurnstileVerify = (token: string) => {
+        setCaptchaToken(token)
     }
 
     return (
@@ -35,7 +47,7 @@ export function Home() {
 
                     <button
                         onClick={handleStartPlaying}
-                        disabled={isPending}
+                        disabled={isPending || !captchaToken}
                         className='flex items-center gap-4 rounded-full bg-blue-600 px-8 py-4 text-lg font-bold transition-colors hover:bg-blue-500 disabled:opacity-50'>
                         {isPending ? (
                             <Loader2 className='animate-spin' />
@@ -66,6 +78,11 @@ export function Home() {
                     contactUrl='#'
                 />
             </div>
+            <Turnstile
+                ref={turnstileRef}
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                onSuccess={handleTurnstileVerify}
+            />
         </main>
     )
 }
