@@ -5,10 +5,6 @@ const nextConfig: NextConfig = {
     typedRoutes: true,
     experimental: {
         optimizeCss: true,
-        optimizePackageImports: ['lucide-react', '@radix-ui/react-separator'],
-    },
-    compiler: {
-        removeConsole: process.env.NODE_ENV === 'production',
     },
 }
 
