@@ -2,12 +2,18 @@ import { Header } from '@/app/_components/header'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { GeistSans } from 'geist/font/sans'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
+import { Suspense } from 'react'
 import './globals.css'
 
 export const metadata: Metadata = {
     title: 'Soda Pop - Real-time 2P Puzzle Battle',
     description: 'Real-time 2-player puzzle battle game',
+}
+
+export const viewport: Viewport = {
+    themeColor: '#0B1120',
+    colorScheme: 'dark',
 }
 
 interface RootLayoutProps {
@@ -22,8 +28,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <div className='bg-background mx-auto flex min-h-svh max-w-6xl flex-col px-16'>
                     {children}
                 </div>
-                <Analytics />
-                <SpeedInsights />
+                <Suspense fallback={null}>
+                    <Analytics />
+                    <SpeedInsights />
+                </Suspense>
             </body>
         </html>
     )

@@ -12,30 +12,28 @@ export async function getMatchClient(
 ): Promise<MatchWithPlayers | null> {
     const supabase = getSupabaseBrowserClient()
 
-    const { data: match, error: matchError } = await supabase
-        .from('matches')
-        .select()
-        .eq('id', matchId)
-        .single()
+    // Run queries in parallel
+    const [matchResult, playersResult] = await Promise.all([
+        supabase.from('matches').select().eq('id', matchId).single(),
+        supabase
+            .from('match_players')
+            .select()
+            .eq('match_id', matchId)
+            .order('player_order', { ascending: true }),
+    ])
 
-    if (matchError || !match) {
-        console.error('Failed to fetch match:', matchError)
+    if (matchResult.error || !matchResult.data) {
+        console.error('Failed to fetch match:', matchResult.error)
         return null
     }
 
-    const { data: players, error: playersError } = await supabase
-        .from('match_players')
-        .select()
-        .eq('match_id', matchId)
-        .order('player_order', { ascending: true })
-
-    if (playersError) {
-        console.error('Failed to fetch players:', playersError)
+    if (playersResult.error) {
+        console.error('Failed to fetch players:', playersResult.error)
         return null
     }
 
     return {
-        ...match,
-        players: players ?? [],
+        ...matchResult.data,
+        players: playersResult.data ?? [],
     }
 }
