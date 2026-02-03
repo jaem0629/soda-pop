@@ -2,18 +2,21 @@
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getActiveMatch, getAuthUser } from './queries'
 
 export async function createRoom(
     playerName: string
 ): Promise<{ success: boolean; matchId?: string; error?: string }> {
     const supabase = await createSupabaseServerClient()
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getAuthUser(supabase)
 
     if (!user) {
         return { success: false, error: 'Authentication required' }
+    }
+
+    const activeMatch = await getActiveMatch(supabase, user.id)
+    if (activeMatch) {
+        return { success: false, error: 'Already in a game' }
     }
 
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -64,13 +67,15 @@ export async function joinRoom(
     playerName: string
 ): Promise<{ success: boolean; matchId?: string; error?: string }> {
     const supabase = await createSupabaseServerClient()
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getAuthUser(supabase)
 
     if (!user) {
         return { success: false, error: 'Authentication required' }
+    }
+
+    const activeMatch = await getActiveMatch(supabase, user.id, code.toUpperCase())
+    if (activeMatch) {
+        return { success: false, error: 'Already in a game' }
     }
 
     const { data: match, error: matchError } = await supabase
@@ -132,9 +137,7 @@ export async function joinRoom(
 
 export async function getAuthUserId(): Promise<string | null> {
     const supabase = await createSupabaseServerClient()
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const user = await getAuthUser(supabase)
     return user?.id ?? null
 }
 

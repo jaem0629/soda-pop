@@ -5,10 +5,11 @@ import {
     useRealtimeContext,
     type GameEvent,
 } from '@/contexts/realtime-context'
+import { useAutoSave } from '@/hooks/use-auto-save'
 import { useGameTimer } from '@/hooks/use-game-timer'
 import { formatTime } from '@/lib/date'
 import { useRouter } from 'next/navigation'
-import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import ConnectionIndicator from '../_components/connection-indicator'
 import GameBoard from '../_components/game-board'
 import { finishMatch, updatePlayerScore } from '../_lib/actions'
@@ -52,30 +53,41 @@ function PlayRoomContent({
     const [opponentScore, setOpponentScore] = useState(
         initialOpponent?.score ?? 0
     )
+
     const gameEndSentRef = useRef(false)
     const scoreRef = useRef(initialPlayer.score)
 
-    // Timer
+    // Save score only once (returns true if saved, false if already saved)
+    const saveMyScore = useCallback(() => {
+        if (gameEndSentRef.current) return false
+        gameEndSentRef.current = true
+        updatePlayerScore(matchId, initialPlayer.player_order, scoreRef.current)
+        return true
+    }, [matchId, initialPlayer.player_order])
+
+    // Timer - auto starts with elapsed time
     const timer = useGameTimer({
         duration: GAME_DURATION,
         onExpire: () => {
+            if (!saveMyScore()) return
             finishMatch(matchId)
+            sendGameEnd()
+            router.push(`/game/${matchId}/result`)
         },
+        autoStart: true,
+        initialElapsed: GAME_DURATION - initialTimeLeft,
     })
 
-    // Start timer on mount with elapsed time
-    const startTimer = useEffectEvent(() => {
-        const elapsed = GAME_DURATION - initialTimeLeft
-        if (elapsed > 0) {
-            timer.start(elapsed)
-        } else {
-            timer.start()
-        }
+    useAutoSave({
+        getData: () => scoreRef.current,
+        onSave: async (score) => {
+            await updatePlayerScore(matchId, initialPlayer.player_order, score)
+        },
+        intervalMs: 10000,
+        saveOnUnload: true,
+        enabled: !timer.isExpired,
+        isEqual: (prev, current) => prev === current,
     })
-
-    useEffect(() => {
-        startTimer()
-    }, [])
 
     // Handle realtime events
     useEffect(() => {
@@ -87,43 +99,15 @@ function PlayRoomContent({
                     }
                     break
                 case 'game_end':
-                    // save my score if opponent ends the game first
-                    if (!gameEndSentRef.current) {
-                        gameEndSentRef.current = true
-                        updatePlayerScore(
-                            matchId,
-                            initialPlayer.player_order,
-                            scoreRef.current
-                        )
-                    }
+                    // Opponent finished first - save my score and navigate
+                    saveMyScore()
                     router.push(`/game/${matchId}/result`)
                     break
             }
         })
 
         return unsubscribe
-    }, [subscribe, initialPlayer.player_order, matchId, router])
-
-    // Send game end when timer expires
-    useEffect(() => {
-        if (timer.isExpired && !gameEndSentRef.current) {
-            gameEndSentRef.current = true
-            // save final score to database
-            updatePlayerScore(
-                matchId,
-                initialPlayer.player_order,
-                scoreRef.current
-            )
-            sendGameEnd()
-            router.push(`/game/${matchId}/result`)
-        }
-    }, [
-        timer.isExpired,
-        sendGameEnd,
-        matchId,
-        router,
-        initialPlayer.player_order,
-    ])
+    }, [subscribe, initialPlayer.player_order, matchId, router, saveMyScore])
 
     // Handle score change (save to database when game ends)
     const handleScoreChange = (score: number) => {

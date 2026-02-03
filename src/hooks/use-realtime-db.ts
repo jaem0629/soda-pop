@@ -1,10 +1,13 @@
 'use client'
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
-import { useEffect, useState } from 'react'
+import type { Database } from '@/../supabase/database'
+import { useEffect, useEffectEvent, useState } from 'react'
+
+type TableName = keyof Database['public']['Tables']
 
 interface UseRealtimeDBOptions {
-    table: string
+    table: TableName
     filter?: string
     onUpdate?: () => void
 }
@@ -26,6 +29,10 @@ export function useRealtimeDB({
 }: UseRealtimeDBOptions) {
     const [isSubscribed, setIsSubscribed] = useState(false)
 
+    const handleUpdate = useEffectEvent(() => {
+        onUpdate?.()
+    })
+
     useEffect(() => {
         const supabase = getSupabaseBrowserClient()
         const channelName = filter ? `db:${table}:${filter}` : `db:${table}`
@@ -40,9 +47,7 @@ export function useRealtimeDB({
                     table,
                     ...(filter && { filter }),
                 },
-                () => {
-                    onUpdate?.()
-                }
+                handleUpdate
             )
             .subscribe((status) => {
                 setIsSubscribed(status === 'SUBSCRIBED')
@@ -52,7 +57,7 @@ export function useRealtimeDB({
             channel.unsubscribe()
             setIsSubscribed(false)
         }
-    }, [table, filter, onUpdate])
+    }, [table, filter])
 
     return { isSubscribed }
 }

@@ -64,6 +64,7 @@ export async function finishMatch(matchId: string): Promise<boolean> {
     return true
 }
 
+/** Host leaves - abandons the entire match */
 export async function leaveMatch(matchId: string): Promise<boolean> {
     const supabase = await createSupabaseServerClient()
 
@@ -74,6 +75,27 @@ export async function leaveMatch(matchId: string): Promise<boolean> {
 
     if (error) {
         console.error('Failed to leave match:', error)
+        return false
+    }
+
+    return true
+}
+
+/** Non-host player leaves - only removes themselves from the match */
+export async function leaveMatchAsPlayer(
+    matchId: string,
+    playerId: string
+): Promise<boolean> {
+    const supabase = await createSupabaseServerClient()
+
+    const { error } = await supabase
+        .from('match_players')
+        .delete()
+        .eq('match_id', matchId)
+        .eq('id', playerId)
+
+    if (error) {
+        console.error('Failed to leave match as player:', error)
         return false
     }
 

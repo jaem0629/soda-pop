@@ -12,6 +12,16 @@ import {
 type UseGameTimerProps = {
     duration: number
     onExpire?: () => void
+    /**
+     * Whether to start the timer automatically on mount
+     * @default false
+     */
+    autoStart?: boolean
+    /**
+     * Initial elapsed time in seconds (only used when autoStart is true)
+     * @default 0
+     */
+    initialElapsed?: number
 }
 
 type UseGameTimerReturn = {
@@ -26,9 +36,15 @@ type UseGameTimerReturn = {
 export function useGameTimer({
     duration,
     onExpire,
+    autoStart = false,
+    initialElapsed = 0,
 }: UseGameTimerProps): UseGameTimerReturn {
-    const [startTime, setStartTime] = useState<number | null>(null)
-    const [timeLeft, setTimeLeft] = useState(duration)
+    const [startTime, setStartTime] = useState<number | null>(() =>
+        autoStart ? Date.now() - initialElapsed * 1000 : null
+    )
+    const [timeLeft, setTimeLeft] = useState(() =>
+        autoStart ? Math.max(0, duration - initialElapsed) : duration
+    )
     const expiredRef = useRef(false)
 
     const isRunning = startTime !== null && timeLeft > 0

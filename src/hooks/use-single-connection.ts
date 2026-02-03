@@ -36,23 +36,22 @@ function subscribe(key: string, callback: () => void) {
 }
 
 /**
- * Hook to prevent multiple connections to the same game room.
+ * Hook to prevent multiple game connections for the same user.
  * Uses Supabase Presence for cross-device/browser detection.
+ * Detects if user is already connected to ANY game room.
  */
-export function useSingleConnection(roomId: string, userId: string) {
-    const stateKey = `${roomId}:${userId}`
+export function useSingleConnection(userId: string) {
     const state = useSyncExternalStore(
-        (callback) => subscribe(stateKey, callback),
-        () => getConnectionState(stateKey),
+        (callback) => subscribe(userId, callback),
+        () => getConnectionState(userId),
         () => DEFAULT_STATE
     )
 
     useEffect(() => {
         const supabase = getSupabaseBrowserClient()
         const sessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
-        const channelName = `presence:${roomId}`
 
-        const channel = supabase.channel(channelName, {
+        const channel = supabase.channel('presence:game', {
             config: {
                 presence: { key: userId },
             },
@@ -71,7 +70,7 @@ export function useSingleConnection(roomId: string, userId: string) {
                         (p) => p.session_id && p.session_id !== sessionId
                     )
                     if (otherSessions.length > 0) {
-                        setConnectionState(stateKey, {
+                        setConnectionState(userId, {
                             isDuplicate: true,
                             isChecking: false,
                         })
@@ -79,7 +78,7 @@ export function useSingleConnection(roomId: string, userId: string) {
                     }
                 }
 
-                setConnectionState(stateKey, {
+                setConnectionState(userId, {
                     isDuplicate: false,
                     isChecking: false,
                 })
@@ -97,9 +96,9 @@ export function useSingleConnection(roomId: string, userId: string) {
         return () => {
             channel.untrack()
             channel.unsubscribe()
-            connectionStates.delete(stateKey)
+            connectionStates.delete(userId)
         }
-    }, [roomId, userId, stateKey])
+    }, [userId])
 
     return state
 }

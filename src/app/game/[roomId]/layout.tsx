@@ -34,7 +34,7 @@ export default async function GameLayout({ children, params }: Props) {
     }
 
     return (
-        <SingleConnectionGuard roomId={roomId} userId={userId}>
+        <SingleConnectionGuard userId={userId}>
             {children}
         </SingleConnectionGuard>
     )

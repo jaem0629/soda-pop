@@ -7,12 +7,13 @@ import {
     useRealtimeContext,
     type GameEvent,
 } from '@/contexts/realtime-context'
+import { useBeforeUnload } from '@/hooks/use-before-unload'
 import { useRealtimeDB } from '@/hooks/use-realtime-db'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import ConnectionIndicator from '../_components/connection-indicator'
+import { leaveMatch, leaveMatchAsPlayer, startMatch } from '../_lib/actions'
 import { getMatchClient } from '../_lib/client-queries'
-import { startMatch, leaveMatch } from '../_lib/actions'
 import type { MatchPlayer, MatchWithPlayers } from '../_lib/types'
 
 interface WaitingRoomProps {
@@ -50,13 +51,12 @@ function WaitingRoomContent({
     const isHost = myPlayer.is_host
     const canStart = isHost && match.players.length >= match.max_players
 
-    // Reload match data
-    const reloadMatch = useCallback(async () => {
+    const reloadMatch = async () => {
         const data = await getMatchClient(matchId)
         if (data) {
             setMatch(data)
         }
-    }, [matchId])
+    }
 
     // Listen for DB changes (player join/leave)
     useRealtimeDB({
@@ -65,14 +65,10 @@ function WaitingRoomContent({
         onUpdate: reloadMatch,
     })
 
-    // Handle game events
+    // Handle game events (DB changes are handled by useRealtimeDB)
     useEffect(() => {
         const unsubscribe = subscribe((event: GameEvent) => {
             switch (event.type) {
-                case 'player_joined':
-                    // Handle broadcast events for UX
-                    reloadMatch()
-                    break
                 case 'game_start':
                     router.push(`/game/${matchId}/play`)
                     break
@@ -80,7 +76,7 @@ function WaitingRoomContent({
         })
 
         return unsubscribe
-    }, [subscribe, reloadMatch, matchId, router])
+    }, [subscribe, matchId, router])
 
     // Send player joined event when connected (for non-host)
     useEffect(() => {
@@ -89,18 +85,8 @@ function WaitingRoomContent({
         }
     }, [isConnected, isHost, sendPlayerJoined, myPlayer.player_name])
 
-    // Leave match on unmount if host
-    useEffect(() => {
-        const handleBeforeUnload = () => {
-            if (isHost) {
-                leaveMatch(matchId)
-            }
-        }
-
-        window.addEventListener('beforeunload', handleBeforeUnload)
-        return () =>
-            window.removeEventListener('beforeunload', handleBeforeUnload)
-    }, [isHost, matchId])
+    // Leave match on page unload if host
+    useBeforeUnload(() => leaveMatch(matchId), isHost)
 
     // Start game handler
     const handleStartGame = async () => {
@@ -115,7 +101,13 @@ function WaitingRoomContent({
 
     // Leave match handler
     const handleLeaveMatch = async () => {
-        await leaveMatch(matchId)
+        if (isHost) {
+            // Host leaving abandons the entire match
+            await leaveMatch(matchId)
+        } else {
+            // Non-host only removes themselves
+            await leaveMatchAsPlayer(matchId, myPlayer.id)
+        }
         router.push('/lobby')
     }
 

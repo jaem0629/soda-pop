@@ -4,17 +4,15 @@ import { useSingleConnection } from '@/hooks/use-single-connection'
 import type { ReactNode } from 'react'
 
 interface SingleConnectionGuardProps {
-    roomId: string
     userId: string
     children: ReactNode
 }
 
 export function SingleConnectionGuard({
-    roomId,
     userId,
     children,
 }: SingleConnectionGuardProps) {
-    const { isDuplicate, isChecking } = useSingleConnection(roomId, userId)
+    const { isDuplicate, isChecking } = useSingleConnection(userId)
 
     if (isChecking) {
         return (
@@ -46,7 +44,7 @@ export function SingleConnectionGuard({
                         이미 다른 곳에서 게임 중입니다
                     </h2>
                     <p className='mb-6 text-slate-400'>
-                        동일한 게임방에 중복 접속할 수 없습니다. 기존 연결에서
+                        동시에 여러 게임에 접속할 수 없습니다. 기존 연결에서
                         게임을 계속해주세요.
                     </p>
                     <button
