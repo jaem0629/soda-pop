@@ -15,5 +15,3 @@ export type MatchPlayerInsert = Tables['match_players']['Insert']
 export type MatchWithPlayers = Match & {
     players: MatchPlayer[]
 }
-
-export const GAME_DURATION = 60

@@ -11,6 +11,7 @@ export type GameState = {
 export const BOARD_SIZE = 8
 export const PIECE_TYPES: PieceType[] = [0, 1, 2, 3, 4, 5]
 export const BASE_SCORE = 10
+export const GAME_DURATION = 60
 
 export const PIECE_COLORS = [
     '#FF4757', // red

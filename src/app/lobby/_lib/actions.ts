@@ -73,7 +73,11 @@ export async function joinRoom(
         return { success: false, error: 'Authentication required' }
     }
 
-    const activeMatch = await getActiveMatch(supabase, user.id, code.toUpperCase())
+    const activeMatch = await getActiveMatch(
+        supabase,
+        user.id,
+        code.toUpperCase()
+    )
     if (activeMatch) {
         return { success: false, error: 'Already in a game' }
     }

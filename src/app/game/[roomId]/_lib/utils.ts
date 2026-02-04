@@ -1,9 +1,8 @@
 import type { MatchPlayer } from './types'
-import { GAME_DURATION } from './types'
 
 export function calculateTimeLeft(
     startedAt: string | null,
-    duration: number = GAME_DURATION
+    duration: number
 ): number {
     if (!startedAt) return duration
 
