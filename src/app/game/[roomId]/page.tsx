@@ -1,8 +1,6 @@
-import { getServerUserId } from '@/lib/auth'
+import { getServerUserId } from '@/lib/supabase/auth'
 import { redirect } from 'next/navigation'
 import { getMatch } from './_lib/queries'
-
-export const runtime = 'edge'
 
 interface Props {
     params: Promise<{ roomId: string }>

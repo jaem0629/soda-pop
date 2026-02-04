@@ -3,8 +3,6 @@ import { redirect } from 'next/navigation'
 import { getActiveMatch, getAuthUser, getUserProfile } from './_lib/queries'
 import { Lobby } from './lobby'
 
-export const runtime = 'edge'
-
 export default async function LobbyPage() {
     const supabase = await createSupabaseServerClient()
     const user = await getAuthUser(supabase)

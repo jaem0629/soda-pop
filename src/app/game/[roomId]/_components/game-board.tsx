@@ -6,7 +6,7 @@ import {
     getGridPosition,
     BOARD_PX,
     CELL_SIZE,
-} from '@/lib/canvas-renderer'
+} from '../_lib/canvas-renderer'
 import {
     BOARD_SIZE,
     swapPieces,
@@ -19,8 +19,8 @@ import {
     type Board,
     type PieceType,
     type DropInfo,
-} from '@/lib/game-logic'
-import { ANIMATION_DURATION, type AnimationState } from '@/lib/animation'
+} from '../_lib/game-logic'
+import { ANIMATION_DURATION, type AnimationState } from '../_lib/animation'
 
 interface GameBoardProps {
     onScoreChange?: (score: number) => void

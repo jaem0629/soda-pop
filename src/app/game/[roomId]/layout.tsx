@@ -1,4 +1,4 @@
-import { getServerUserId } from '@/lib/auth'
+import { getServerUserId } from '@/lib/supabase/auth'
 import { redirect } from 'next/navigation'
 import { SingleConnectionGuard } from './_components/single-connection-guard'
 import { getMatch, getPlayerByUserId } from './_lib/queries'

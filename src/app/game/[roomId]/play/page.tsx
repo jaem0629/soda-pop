@@ -1,11 +1,9 @@
-import { getServerUserId } from '@/lib/auth'
+import { getServerUserId } from '@/lib/supabase/auth'
 import { redirect } from 'next/navigation'
 import { getMatch, getPlayerByUserId } from '../_lib/queries'
 import { calculateTimeLeft } from '../_lib/utils'
 import { GAME_DURATION } from '../_lib/types'
 import PlayRoom from './play-room'
-
-export const runtime = 'edge'
 
 interface Props {
     params: Promise<{ roomId: string }>
