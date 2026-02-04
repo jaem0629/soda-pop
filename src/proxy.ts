@@ -2,18 +2,18 @@ import { updateSession } from '@/lib/supabase/middleware'
 import type { NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
-    return await updateSession(request)
+  return await updateSession(request)
 }
 
 export const config = {
-    matcher: [
-        /*
-         * Exclude the following paths:
-         * - _next/static (static files)
-         * - _next/image (image optimization)
-         * - favicon.ico
-         * - image files
-         */
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-    ],
+  matcher: [
+    /*
+     * Exclude the following paths:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico
+     * - image files
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }

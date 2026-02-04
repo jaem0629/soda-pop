@@ -1,41 +1,39 @@
-import { getServerUserId } from '@/lib/auth'
+import { getServerUserId } from '@/lib/supabase/auth'
 import { redirect } from 'next/navigation'
 import { SingleConnectionGuard } from './_components/single-connection-guard'
 import { getMatch, getPlayerByUserId } from './_lib/queries'
 
 interface Props {
-    children: React.ReactNode
-    params: Promise<{ roomId: string }>
+  children: React.ReactNode
+  params: Promise<{ roomId: string }>
 }
 
 export default async function GameLayout({ children, params }: Props) {
-    const { roomId } = await params
+  const { roomId } = await params
 
-    // Get userId from auth session
-    const userId = await getServerUserId()
-    if (!userId) {
-        redirect('/')
-    }
+  // Get userId from auth session
+  const userId = await getServerUserId()
+  if (!userId) {
+    redirect('/')
+  }
 
-    // Run validation queries in parallel
-    const [player, match] = await Promise.all([
-        getPlayerByUserId(roomId, userId),
-        getMatch(roomId),
-    ])
+  // Run validation queries in parallel
+  const [player, match] = await Promise.all([
+    getPlayerByUserId(roomId, userId),
+    getMatch(roomId),
+  ])
 
-    // Validate player exists and belongs to this match
-    if (!player) {
-        redirect('/')
-    }
+  // Validate player exists and belongs to this match
+  if (!player) {
+    redirect('/')
+  }
 
-    // Validate match exists and is not abandoned
-    if (!match || match.status === 'abandoned') {
-        redirect('/')
-    }
+  // Validate match exists and is not abandoned
+  if (!match || match.status === 'abandoned') {
+    redirect('/')
+  }
 
-    return (
-        <SingleConnectionGuard roomId={roomId} userId={userId}>
-            {children}
-        </SingleConnectionGuard>
-    )
+  return (
+    <SingleConnectionGuard userId={userId}>{children}</SingleConnectionGuard>
+  )
 }
