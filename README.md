@@ -29,6 +29,14 @@ Real-time 2-player puzzle battle game
 - pnpm
 - Supabase project
 
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key |
+
 ### Installation
 
 ```bash
@@ -37,9 +45,20 @@ pnpm install
 
 # Set up environment variables
 cp .env.local.example .env.local
-# Add your Supabase URL and Key to .env.local
+# Edit .env.local with your credentials
+```
 
-# Run development server
+### Database Setup
+
+Run the SQL schema in your Supabase SQL Editor:
+
+```bash
+# Copy contents of supabase/schema.sql to Supabase SQL Editor and execute
+```
+
+### Run Development Server
+
+```bash
 pnpm dev
 ```
 
