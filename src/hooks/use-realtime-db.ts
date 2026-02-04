@@ -7,9 +7,9 @@ import { useEffect, useEffectEvent, useState } from 'react'
 type TableName = keyof Database['public']['Tables']
 
 interface UseRealtimeDBOptions {
-    table: TableName
-    filter?: string
-    onUpdate?: () => void
+  table: TableName
+  filter?: string
+  onUpdate?: () => void
 }
 
 /**
@@ -23,41 +23,41 @@ interface UseRealtimeDBOptions {
  * })
  */
 export function useRealtimeDB({
-    table,
-    filter,
-    onUpdate,
+  table,
+  filter,
+  onUpdate,
 }: UseRealtimeDBOptions) {
-    const [isSubscribed, setIsSubscribed] = useState(false)
+  const [isSubscribed, setIsSubscribed] = useState(false)
 
-    const handleUpdate = useEffectEvent(() => {
-        onUpdate?.()
-    })
+  const handleUpdate = useEffectEvent(() => {
+    onUpdate?.()
+  })
 
-    useEffect(() => {
-        const supabase = getSupabaseBrowserClient()
-        const channelName = filter ? `db:${table}:${filter}` : `db:${table}`
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient()
+    const channelName = filter ? `db:${table}:${filter}` : `db:${table}`
 
-        const channel = supabase
-            .channel(channelName)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table,
-                    ...(filter && { filter }),
-                },
-                handleUpdate
-            )
-            .subscribe((status) => {
-                setIsSubscribed(status === 'SUBSCRIBED')
-            })
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table,
+          ...(filter && { filter }),
+        },
+        handleUpdate,
+      )
+      .subscribe((status) => {
+        setIsSubscribed(status === 'SUBSCRIBED')
+      })
 
-        return () => {
-            channel.unsubscribe()
-            setIsSubscribed(false)
-        }
-    }, [table, filter])
+    return () => {
+      channel.unsubscribe()
+      setIsSubscribed(false)
+    }
+  }, [table, filter])
 
-    return { isSubscribed }
+  return { isSubscribed }
 }

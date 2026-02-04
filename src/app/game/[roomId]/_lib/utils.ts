@@ -1,42 +1,42 @@
 import type { MatchPlayer } from './types'
 
 export function calculateTimeLeft(
-    startedAt: string | null,
-    duration: number
+  startedAt: string | null,
+  duration: number,
 ): number {
-    if (!startedAt) return duration
+  if (!startedAt) return duration
 
-    const startTime = new Date(startedAt).getTime()
+  const startTime = new Date(startedAt).getTime()
 
-    if (isNaN(startTime)) {
-        console.error('Invalid startedAt timestamp:', startedAt)
-        return duration
-    }
+  if (isNaN(startTime)) {
+    console.error('Invalid startedAt timestamp:', startedAt)
+    return duration
+  }
 
-    const now = Date.now()
-    const elapsed = Math.floor((now - startTime) / 1000)
-    const remaining = duration - elapsed
+  const now = Date.now()
+  const elapsed = Math.floor((now - startTime) / 1000)
+  const remaining = duration - elapsed
 
-    return Math.max(0, remaining)
+  return Math.max(0, remaining)
 }
 
 export function getPlayerByOrder(
-    players: MatchPlayer[],
-    order: number
+  players: MatchPlayer[],
+  order: number,
 ): MatchPlayer | undefined {
-    return players.find((p) => p.player_order === order)
+  return players.find((p) => p.player_order === order)
 }
 
 export function getOpponent(
-    players: MatchPlayer[],
-    myOrder: number
+  players: MatchPlayer[],
+  myOrder: number,
 ): MatchPlayer | undefined {
-    return players.find((p) => p.player_order !== myOrder)
+  return players.find((p) => p.player_order !== myOrder)
 }
 
 export function findPlayerByUserId(
-    players: MatchPlayer[],
-    userId: string
+  players: MatchPlayer[],
+  userId: string,
 ): MatchPlayer | undefined {
-    return players.find((p) => p.user_id === userId)
+  return players.find((p) => p.user_id === userId)
 }

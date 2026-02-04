@@ -18,18 +18,18 @@ import { useEffect, useEffectEvent } from 'react'
  * ```
  */
 export function useBeforeUnload(callback: () => void, enabled: boolean = true) {
-    // Wrap callback in useEffectEvent to always use the latest version
-    const handleBeforeUnload = useEffectEvent(() => {
-        callback()
-    })
+  // Wrap callback in useEffectEvent to always use the latest version
+  const handleBeforeUnload = useEffectEvent(() => {
+    callback()
+  })
 
-    useEffect(() => {
-        if (!enabled) return
+  useEffect(() => {
+    if (!enabled) return
 
-        window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('beforeunload', handleBeforeUnload)
 
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload)
-        }
-    }, [enabled])
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [enabled])
 }

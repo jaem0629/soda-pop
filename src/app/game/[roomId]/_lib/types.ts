@@ -13,5 +13,5 @@ export type MatchPlayer = Tables['match_players']['Row']
 export type MatchPlayerInsert = Tables['match_players']['Insert']
 
 export type MatchWithPlayers = Match & {
-    players: MatchPlayer[]
+  players: MatchPlayer[]
 }
