@@ -1,9 +1,7 @@
 import { Footer } from '@/app/_components/footer'
 import { LoginDialog } from '@/app/_components/login-dialog'
 import { Separator } from '@/components/ui/separator'
-import { MatchCard } from './_components/match-card'
-import { PopCard } from './_components/pop-card'
-import { WinCard } from './_components/win-card'
+import { MatchCard, PopCard, WinCard } from './_components/feature-cards'
 
 export default function HomePage() {
     return (
