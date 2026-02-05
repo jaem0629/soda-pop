@@ -1,12 +1,11 @@
 'use server'
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 
 export async function signInAsGuest(
   nickname: string,
   captchaToken: string,
-): Promise<void> {
+): Promise<{ success: boolean; error?: string }> {
   const supabase = await createSupabaseServerClient()
 
   let {
@@ -21,7 +20,7 @@ export async function signInAsGuest(
     })
     if (error || !data.user) {
       console.error('Anonymous sign-in failed:', error)
-      throw new Error('Sign-in failed')
+      return { success: false, error: 'Sign-in failed' }
     }
     user = data.user
   }
@@ -38,8 +37,8 @@ export async function signInAsGuest(
 
   if (profileError) {
     console.error('User profile creation failed:', profileError)
-    throw new Error('Profile creation failed')
+    return { success: false, error: 'Profile creation failed' }
   }
 
-  redirect('/lobby')
+  return { success: true }
 }
