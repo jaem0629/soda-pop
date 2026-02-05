@@ -80,10 +80,6 @@ export function useAutoSave<T>({
     try {
       await onSave(currentData)
       lastSavedDataRef.current = currentData
-
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Auto-save] Data saved (${source})`, currentData)
-      }
     } catch (error) {
       console.error(`[Auto-save] Failed to save (${source}):`, error)
     } finally {

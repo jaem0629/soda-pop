@@ -11,11 +11,14 @@ import {
 import type { TurnstileInstance } from '@marsidev/react-turnstile'
 import { Turnstile } from '@marsidev/react-turnstile'
 import { Gamepad2Icon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
 import { signInAsGuest } from '../actions'
 
 export function LoginDialog() {
+  const router = useRouter()
   const [showGuestLogin, setShowGuestLogin] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const turnstileRef = useRef<TurnstileInstance | null>(null)
 
   const handleGuestLogin = () => {
@@ -29,12 +32,31 @@ export function LoginDialog() {
   }
 
   const handleTurnstileVerify = async (token: string) => {
-    // Auto-login when Turnstile verification completes
-    // Generate unique nickname using UUID (no duplicates possible)
-    const uuid = crypto.randomUUID()
-    const uniqueId = uuid.split('-')[0] // First 8 characters
-    const randomNickname = `Guest_${uniqueId}`
-    await signInAsGuest(randomNickname, token)
+    if (isLoading) return
+    setIsLoading(true)
+
+    try {
+      // Auto-login when Turnstile verification completes
+      // Generate unique nickname using UUID (no duplicates possible)
+      const uuid = crypto.randomUUID()
+      const uniqueId = uuid.split('-')[0] // First 8 characters
+      const randomNickname = `Guest_${uniqueId}`
+
+      const result = await signInAsGuest(randomNickname, token)
+
+      if (result.success) {
+        // Client-side redirect to avoid React state conflicts
+        router.push('/lobby')
+      } else {
+        console.error('Sign-in failed:', result.error)
+        turnstileRef.current?.reset()
+        setIsLoading(false)
+      }
+    } catch (error) {
+      console.error('Sign-in error:', error)
+      turnstileRef.current?.reset()
+      setIsLoading(false)
+    }
   }
 
   return (
