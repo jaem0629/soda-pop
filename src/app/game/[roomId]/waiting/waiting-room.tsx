@@ -7,7 +7,6 @@ import {
   useRealtimeContext,
   type GameEvent,
 } from '@/contexts/realtime-context'
-import { useBeforeUnload } from '@/hooks/use-before-unload'
 import { useRealtimeDB } from '@/hooks/use-realtime-db'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -85,9 +84,6 @@ function WaitingRoomContent({
       sendPlayerJoined(myPlayer.player_name)
     }
   }, [isConnected, isHost, sendPlayerJoined, myPlayer.player_name])
-
-  // Leave match on page unload if host
-  useBeforeUnload(() => leaveMatch(matchId), isHost)
 
   // Start game handler
   const handleStartGame = async () => {

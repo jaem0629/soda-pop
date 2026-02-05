@@ -21,7 +21,7 @@ export default async function LobbyPage() {
     redirect(`/game/${activeMatch.id}`)
   }
 
-  const nickname = profile?.username ?? 'Guest'
+  const nickname = profile?.username ?? 'Unknown'
 
   return <Lobby nickname={nickname} />
 }

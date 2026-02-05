@@ -16,6 +16,21 @@ const DEFAULT_STATE: ConnectionState = {
   isChecking: true,
 }
 
+const SESSION_STORAGE_KEY = 'game-tab-session-id'
+
+/**
+ * Get or create a tab-specific session ID.
+ * This persists across refreshes but is unique per tab.
+ */
+function getTabSessionId(): string {
+  let sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY)
+  if (!sessionId) {
+    sessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    sessionStorage.setItem(SESSION_STORAGE_KEY, sessionId)
+  }
+  return sessionId
+}
+
 function getConnectionState(key: string): ConnectionState {
   return connectionStates.get(key) ?? DEFAULT_STATE
 }
@@ -38,7 +53,7 @@ function subscribe(key: string, callback: () => void) {
 /**
  * Hook to prevent multiple game connections for the same user.
  * Uses Supabase Presence for cross-device/browser detection.
- * Detects if user is already connected to ANY game room.
+ * Uses sessionStorage to allow same-tab refreshes.
  */
 export function useSingleConnection(userId: string) {
   const state = useSyncExternalStore(
@@ -49,7 +64,7 @@ export function useSingleConnection(userId: string) {
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
-    const sessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const tabSessionId = getTabSessionId()
 
     const channel = supabase.channel('presence:game', {
       config: {
@@ -61,15 +76,15 @@ export function useSingleConnection(userId: string) {
       .on('presence', { event: 'sync' }, () => {
         const presenceState = channel.presenceState()
         const myPresences = presenceState[userId] as
-          | Array<{ session_id?: string; presence_ref: string }>
+          | Array<{ tab_session_id?: string; presence_ref: string }>
           | undefined
 
         if (myPresences && myPresences.length > 1) {
-          // Check if there's another session that joined before this one
-          const otherSessions = myPresences.filter(
-            (p) => p.session_id && p.session_id !== sessionId,
+          // Check if there's another TAB (not just another presence entry)
+          const otherTabs = myPresences.filter(
+            (p) => p.tab_session_id && p.tab_session_id !== tabSessionId,
           )
-          if (otherSessions.length > 0) {
+          if (otherTabs.length > 0) {
             setConnectionState(userId, {
               isDuplicate: true,
               isChecking: false,
@@ -86,7 +101,7 @@ export function useSingleConnection(userId: string) {
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           await channel.track({
-            session_id: sessionId,
+            tab_session_id: tabSessionId,
             user_id: userId,
             joined_at: Date.now(),
           })
