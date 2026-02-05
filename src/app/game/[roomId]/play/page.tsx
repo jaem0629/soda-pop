@@ -12,11 +12,8 @@ interface Props {
 export default async function PlayPage({ params }: Props) {
   const { roomId } = await params
 
-  // Get userId from auth (layout already validated)
-  const userId = await getServerUserId()
-  if (!userId) {
-    redirect('/')
-  }
+  // userId is validated by layout
+  const userId = (await getServerUserId())!
 
   // Get data
   const [player, match] = await Promise.all([

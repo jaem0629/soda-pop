@@ -1,3 +1,4 @@
+import { getMatchRoute } from '@/app/_lib/routing'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getActiveMatch, getAuthUser, getUserProfile } from './_lib/queries'
@@ -18,7 +19,7 @@ export default async function LobbyPage() {
   ])
 
   if (activeMatch) {
-    redirect(`/game/${activeMatch.id}`)
+    redirect(getMatchRoute(activeMatch.id, activeMatch.status))
   }
 
   const nickname = profile?.username ?? 'Unknown'
