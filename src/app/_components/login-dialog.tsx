@@ -45,7 +45,6 @@ export function LoginDialog() {
       const result = await signInAsGuest(randomNickname, token)
 
       if (result.success) {
-        // Client-side redirect to avoid React state conflicts
         router.push('/lobby')
       } else {
         console.error('Sign-in failed:', result.error)

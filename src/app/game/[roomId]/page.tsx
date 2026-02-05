@@ -1,4 +1,4 @@
-import { getServerUserId } from '@/lib/supabase/auth'
+import { getMatchRoute } from '@/app/_lib/routing'
 import { redirect } from 'next/navigation'
 import { getMatch } from './_lib/queries'
 
@@ -9,24 +9,12 @@ interface Props {
 export default async function GameRoomPage({ params }: Props) {
   const { roomId } = await params
 
-  // Run queries in parallel
-  const [userId, match] = await Promise.all([
-    getServerUserId(),
-    getMatch(roomId),
-  ])
+  // userId is validated by layout, only check match here
+  const match = await getMatch(roomId)
 
-  if (!match || !userId) {
+  if (!match) {
     redirect('/')
   }
 
-  switch (match.status) {
-    case 'playing':
-      redirect(`/game/${roomId}/play`)
-    case 'finished':
-      redirect('/lobby')
-    case 'waiting':
-    case 'matching':
-    default:
-      redirect(`/game/${roomId}/waiting`)
-  }
+  redirect(getMatchRoute(roomId, match.status))
 }

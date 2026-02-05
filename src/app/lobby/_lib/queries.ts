@@ -16,9 +16,9 @@ export async function getActiveMatch(
 ) {
   const { data } = await supabase
     .from('matches')
-    .select('id, code, match_players!inner(user_id)')
+    .select('id, code, status, match_players!inner(user_id)')
     .eq('match_players.user_id', userId)
-    .in('status', ['waiting', 'playing'])
+    .in('status', ['waiting', 'matching', 'playing'])
     .maybeSingle()
 
   if (!data) return null
