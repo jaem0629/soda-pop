@@ -18,14 +18,19 @@ export default async function PlayPage({ params }: Props) {
     redirect('/')
   }
 
-  // Get data (layout already validated, but we need it)
+  // Get data
   const [player, match] = await Promise.all([
     getPlayerByUserId(roomId, userId),
     getMatch(roomId),
   ])
 
+  // Validate player and match exist
+  if (!player || !match || match.status === 'abandoned') {
+    redirect('/')
+  }
+
   // If status doesn't match, let index router handle it
-  if (match?.status !== 'playing') {
+  if (match.status !== 'playing') {
     redirect(`/game/${roomId}`)
   }
 
