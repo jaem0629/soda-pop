@@ -1,10 +1,11 @@
+import { cache } from 'react'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { MatchWithPlayers, MatchPlayer } from './types'
 
-export async function getMatch(
-  matchId: string,
-): Promise<MatchWithPlayers | null> {
-  const supabase = await createSupabaseServerClient()
+export const getMatch = cache(
+  async (matchId: string): Promise<MatchWithPlayers | null> => {
+    console.log('🔍 [cache] getMatch 실행:', matchId, new Date().toISOString())
+    const supabase = await createSupabaseServerClient()
 
   // Run queries in parallel
   const [matchResult, playersResult] = await Promise.all([
@@ -30,12 +31,13 @@ export async function getMatch(
     ...matchResult.data,
     players: playersResult.data ?? [],
   }
-}
+  },
+)
 
-export async function getPlayerById(
-  playerId: string,
-): Promise<MatchPlayer | null> {
-  const supabase = await createSupabaseServerClient()
+export const getPlayerById = cache(
+  async (playerId: string): Promise<MatchPlayer | null> => {
+    console.log('🔍 [cache] getPlayerById 실행:', playerId)
+    const supabase = await createSupabaseServerClient()
 
   const { data: player, error } = await supabase
     .from('match_players')
@@ -49,13 +51,18 @@ export async function getPlayerById(
   }
 
   return player
-}
+  },
+)
 
-export async function getPlayerByUserId(
-  matchId: string,
-  userId: string,
-): Promise<MatchPlayer | null> {
-  const supabase = await createSupabaseServerClient()
+export const getPlayerByUserId = cache(
+  async (matchId: string, userId: string): Promise<MatchPlayer | null> => {
+    console.log(
+      '🔍 [cache] getPlayerByUserId 실행:',
+      matchId,
+      userId,
+      new Date().toISOString(),
+    )
+    const supabase = await createSupabaseServerClient()
 
   const { data, error } = await supabase
     .from('match_players')
@@ -69,4 +76,5 @@ export async function getPlayerByUserId(
   }
 
   return data
-}
+  },
+)
