@@ -119,14 +119,11 @@ export function Lobby({ nickname }: LobbyProps) {
   }
 
   return (
-    <div className='relative flex min-h-svh flex-col overflow-hidden bg-[#0B1120] text-white'>
-      <main className='relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-6 p-6 md:px-10 md:py-8'>
+    <div className='relative flex'>
+      <main className='relative z-10 mx-auto flex w-full flex-1 flex-col gap-4'>
         {/* Header */}
         <div className='flex flex-wrap items-end justify-between gap-6'>
           <div className='flex flex-col gap-2'>
-            <h1 className='bg-linear-to-r from-cyan-300 to-blue-500 bg-clip-text text-4xl leading-tight font-black tracking-[-0.033em] text-transparent md:text-5xl'>
-              Game Lobby
-            </h1>
             <p className='text-base font-normal text-slate-400'>
               Select a mode and pop into action!
             </p>
