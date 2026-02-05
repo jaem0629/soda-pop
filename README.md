@@ -31,10 +31,10 @@ Real-time 2-player puzzle battle game
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key |
+| Variable                         | Description                   |
+| -------------------------------- | ----------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`       | Supabase project URL          |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`  | Supabase anonymous key        |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key |
 
 ### Installation

@@ -110,9 +110,5 @@ export function useAutoSave<T>({
 
     onSave(currentData)
     lastSavedDataRef.current = currentData
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Auto-save] Data saved (unload)', currentData)
-    }
   }, enabled && saveOnUnload)
 }
