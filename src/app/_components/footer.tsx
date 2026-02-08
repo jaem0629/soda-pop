@@ -10,7 +10,7 @@ export function Footer({
   contactUrl,
 }: FooterProps) {
   return (
-    <div className='flex w-full items-center justify-between text-xs'>
+    <div className='flex w-full items-center justify-between px-16 py-8 text-xs'>
       <p>© 2026 Soda Pop</p>
       <div className='flex gap-4'>
         <a href={privacyPolicyUrl} className='transition-colors'>

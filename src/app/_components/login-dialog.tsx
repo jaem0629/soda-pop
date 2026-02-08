@@ -13,7 +13,7 @@ import { Turnstile } from '@marsidev/react-turnstile'
 import { Gamepad2Icon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
-import { signInAsGuest } from '../actions'
+import { signInAsGuest } from '@/app/_lib/actions'
 
 export function LoginDialog() {
   const router = useRouter()

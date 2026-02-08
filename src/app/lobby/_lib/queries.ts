@@ -1,19 +1,9 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
-
-/** Get authenticated user or null */
-export async function getAuthUser(supabase: SupabaseClient) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  return user
-}
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 /** Get user's active match (waiting or playing) */
-export async function getActiveMatch(
-  supabase: SupabaseClient,
-  userId: string,
-  excludeCode?: string,
-) {
+export async function getActiveMatch(userId: string, excludeCode?: string) {
+  const supabase = await createSupabaseServerClient()
+
   const { data } = await supabase
     .from('matches')
     .select('id, code, status, match_players!inner(user_id)')
@@ -27,7 +17,9 @@ export async function getActiveMatch(
 }
 
 /** Get user profile */
-export async function getUserProfile(supabase: SupabaseClient, userId: string) {
+export async function getUserProfile(userId: string) {
+  const supabase = await createSupabaseServerClient()
+
   const { data } = await supabase
     .from('users')
     .select('username')

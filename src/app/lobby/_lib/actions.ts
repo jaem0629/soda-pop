@@ -1,23 +1,24 @@
 'use server'
 
+import { getAuthUser } from '@/app/_lib/queries'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import { getActiveMatch, getAuthUser } from './queries'
+import { getActiveMatch } from './queries'
 
 export async function createRoom(
   playerName: string,
 ): Promise<{ success: boolean; matchId?: string; error?: string }> {
-  const supabase = await createSupabaseServerClient()
-  const user = await getAuthUser(supabase)
+  const user = await getAuthUser()
 
   if (!user) {
     return { success: false, error: 'Authentication required' }
   }
 
-  const activeMatch = await getActiveMatch(supabase, user.id)
+  const activeMatch = await getActiveMatch(user.id)
   if (activeMatch) {
     return { success: false, error: 'Already in a game' }
   }
+
+  const supabase = await createSupabaseServerClient()
 
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   const randomValues = crypto.getRandomValues(new Uint8Array(6))
@@ -64,21 +65,18 @@ export async function joinRoom(
   code: string,
   playerName: string,
 ): Promise<{ success: boolean; matchId?: string; error?: string }> {
-  const supabase = await createSupabaseServerClient()
-  const user = await getAuthUser(supabase)
+  const user = await getAuthUser()
 
   if (!user) {
     return { success: false, error: 'Authentication required' }
   }
 
-  const activeMatch = await getActiveMatch(
-    supabase,
-    user.id,
-    code.toUpperCase(),
-  )
+  const activeMatch = await getActiveMatch(user.id, code.toUpperCase())
   if (activeMatch) {
     return { success: false, error: 'Already in a game' }
   }
+
+  const supabase = await createSupabaseServerClient()
 
   const { data: match, error: matchError } = await supabase
     .from('matches')
@@ -138,13 +136,6 @@ export async function joinRoom(
 }
 
 export async function getAuthUserId(): Promise<string | null> {
-  const supabase = await createSupabaseServerClient()
-  const user = await getAuthUser(supabase)
+  const user = await getAuthUser()
   return user?.id ?? null
-}
-
-export async function signOut(): Promise<void> {
-  const supabase = await createSupabaseServerClient()
-  await supabase.auth.signOut()
-  redirect('/')
 }

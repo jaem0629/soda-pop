@@ -1,12 +1,11 @@
 import { getMatchRoute } from '@/app/_lib/routing'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/app/_lib/queries'
 import { redirect } from 'next/navigation'
-import { getActiveMatch, getAuthUser, getUserProfile } from './_lib/queries'
+import { getActiveMatch, getUserProfile } from './_lib/queries'
 import { Lobby } from './lobby'
 
 export default async function LobbyPage() {
-  const supabase = await createSupabaseServerClient()
-  const user = await getAuthUser(supabase)
+  const user = await getAuthUser()
 
   if (!user) {
     redirect('/')
@@ -14,8 +13,8 @@ export default async function LobbyPage() {
 
   // Run queries in parallel
   const [activeMatch, profile] = await Promise.all([
-    getActiveMatch(supabase, user.id),
-    getUserProfile(supabase, user.id),
+    getActiveMatch(user.id),
+    getUserProfile(user.id),
   ])
 
   if (activeMatch) {

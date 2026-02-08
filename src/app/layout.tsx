@@ -1,9 +1,11 @@
 import { Header } from '@/app/_components/header'
+import { Separator } from '@/components/ui/separator'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { GeistSans } from 'geist/font/sans'
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
+import { Footer } from './_components/footer'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -20,13 +22,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang='ko' className={`${GeistSans.className} dark`}>
       <body className='antialiased'>
         <Header />
-        <div className='bg-background mx-auto flex min-h-svh max-w-6xl flex-col px-16'>
+        <div className='bg-background mx-auto flex max-w-6xl flex-col px-16 py-8'>
           {children}
         </div>
         <Suspense fallback={null}>
           <Analytics />
           <SpeedInsights />
         </Suspense>
+        <Separator />
+        <Footer privacyPolicyUrl='#' termsOfServiceUrl='#' contactUrl='#' />
       </body>
     </html>
   )
