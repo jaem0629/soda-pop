@@ -25,7 +25,7 @@ export function UserMenu({ nickname }: UserMenuProps) {
             {nickname.charAt(0).toUpperCase()}
           </span>
         </div>
-        <span className='text-sm font-medium text-white'>{nickname}</span>
+        <span className='text-sm font-medium'>{nickname}</span>
       </div>
       <Button
         onClick={handleSignOut}
