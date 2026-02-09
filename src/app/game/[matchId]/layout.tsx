@@ -4,7 +4,7 @@ import { SingleConnectionGuard } from './_components/single-connection-guard'
 
 interface Props {
   children: React.ReactNode
-  params: Promise<{ roomId: string }>
+  params: Promise<{ matchId: string }>
 }
 
 export default async function GameLayout({ children, params }: Props) {

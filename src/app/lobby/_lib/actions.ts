@@ -4,7 +4,7 @@ import { getAuthUser } from '@/app/_lib/queries'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { getActiveMatch } from './queries'
 
-export async function createRoom(
+export async function createMatch(
   playerName: string,
 ): Promise<{ success: boolean; matchId?: string; error?: string }> {
   const user = await getAuthUser()
@@ -38,7 +38,7 @@ export async function createRoom(
 
   if (matchError || !match) {
     console.error('Match creation failed:', matchError)
-    return { success: false, error: 'Failed to create room' }
+    return { success: false, error: 'Failed to create match' }
   }
 
   const { error: playerError } = await supabase.from('match_players').insert({
@@ -55,13 +55,13 @@ export async function createRoom(
       .from('matches')
       .update({ status: 'abandoned' })
       .eq('id', match.id)
-    return { success: false, error: 'Failed to create room' }
+    return { success: false, error: 'Failed to create match' }
   }
 
   return { success: true, matchId: match.id }
 }
 
-export async function joinRoom(
+export async function joinMatch(
   code: string,
   playerName: string,
 ): Promise<{ success: boolean; matchId?: string; error?: string }> {
@@ -85,7 +85,7 @@ export async function joinRoom(
     .single()
 
   if (matchError || !match) {
-    return { success: false, error: 'Room not found' }
+    return { success: false, error: 'Match not found' }
   }
 
   if (match.status === 'finished' || match.status === 'abandoned') {
@@ -115,7 +115,7 @@ export async function joinRoom(
   }
 
   if (players.length >= match.max_players) {
-    return { success: false, error: 'Room is full' }
+    return { success: false, error: 'Match is full' }
   }
 
   const nextOrder = players.length + 1
@@ -129,7 +129,7 @@ export async function joinRoom(
 
   if (insertError) {
     console.error('Player addition failed:', insertError)
-    return { success: false, error: 'Failed to join room' }
+    return { success: false, error: 'Failed to join match' }
   }
 
   return { success: true, matchId: match.id }

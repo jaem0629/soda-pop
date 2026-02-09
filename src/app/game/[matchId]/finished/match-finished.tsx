@@ -1,23 +1,22 @@
 'use client'
 
-import { GlassPanel } from '@/components/glass-panel'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import type { MatchPlayer } from '../_lib/types'
 
-interface GameResultProps {
+interface MatchFinishedProps {
   myPlayer: MatchPlayer
   opponent: MatchPlayer | undefined
   myScore: number
   opponentScore: number
 }
 
-export default function GameResult({
+export default function MatchFinished({
   myPlayer,
   opponent,
   myScore,
   opponentScore,
-}: GameResultProps) {
+}: MatchFinishedProps) {
   const router = useRouter()
 
   const isWinner = myScore > opponentScore
@@ -44,7 +43,7 @@ export default function GameResult({
     <div className='flex flex-1 items-center justify-center p-4'>
       <div className='flex w-full max-w-4xl flex-col items-center gap-8 lg:flex-row lg:items-start'>
         {/* Main Result Card */}
-        <GlassPanel className='w-full max-w-md flex-1 overflow-hidden p-8'>
+        <div className='w-full max-w-md flex-1 overflow-hidden p-8'>
           {/* Glow Effect */}
           <div className='absolute inset-x-0 top-0 h-1 bg-linear-to-r from-transparent via-cyan-400 to-transparent opacity-70' />
 
@@ -146,10 +145,10 @@ export default function GameResult({
               Back to Home
             </Button>
           </div>
-        </GlassPanel>
+        </div>
 
         {/* Ranking Card */}
-        <GlassPanel className='w-full max-w-sm overflow-hidden lg:max-w-xs'>
+        <div className='w-full max-w-sm overflow-hidden lg:max-w-xs'>
           <div className='border-b border-white/5 bg-[#0B1120]/80 p-6'>
             <h3 className='flex items-center gap-2 text-xl font-bold text-white'>
               <svg
@@ -226,7 +225,7 @@ export default function GameResult({
               </div>
             </div>
           </div>
-        </GlassPanel>
+        </div>
       </div>
     </div>
   )

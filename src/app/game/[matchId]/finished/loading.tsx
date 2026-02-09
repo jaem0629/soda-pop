@@ -1,10 +1,10 @@
 import { Loader2Icon } from 'lucide-react'
 
-export default function PlayLoading() {
+export default function Loading() {
   return (
     <div className='flex flex-col items-center justify-center'>
       <Loader2Icon className='size-8 animate-spin' />
-      <p className='text-muted-foreground mt-4'>Starting game...</p>
+      <p className='text-muted-foreground mt-4'>Waiting for match results...</p>
     </div>
   )
 }

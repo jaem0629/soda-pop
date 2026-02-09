@@ -1,4 +1,4 @@
-import type { MatchStatus } from '@/app/game/[roomId]/_lib/types'
+import type { MatchStatus } from '@/app/game/[matchId]/_lib/types'
 import type { Route } from 'next'
 
 /**
@@ -7,9 +7,9 @@ import type { Route } from 'next'
 export function getMatchRoute(matchId: string, status: MatchStatus): Route {
   switch (status) {
     case 'playing':
-      return `/game/${matchId}/play` as Route
+      return `/game/${matchId}/playing` as Route
     case 'finished':
-      return `/game/${matchId}/result` as Route
+      return `/game/${matchId}/finished` as Route
     case 'waiting':
     case 'matching':
     default:

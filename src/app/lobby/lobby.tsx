@@ -8,15 +8,15 @@ import {
   LayoutGridIcon,
   Loader2Icon,
   LockIcon,
-  PlusIcon,
   SearchIcon,
+  SwordsIcon,
   TargetIcon,
   Users2Icon,
   UsersIcon,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createRoom, joinRoom } from './_lib/actions'
+import { createMatch, joinMatch } from './_lib/actions'
 
 type GameModeCard = {
   id: string
@@ -54,7 +54,7 @@ const GAME_MODES: GameModeCard[] = [
   {
     id: 'custom',
     name: 'Custom',
-    description: 'Private Room',
+    description: 'Private Match',
     icon: <LockIcon className='size-8' />,
     color: 'text-pink-400',
     disabled: true,
@@ -67,32 +67,32 @@ interface LobbyProps {
 
 export function Lobby({ nickname }: LobbyProps) {
   const router = useRouter()
-  const [roomCode, setRoomCode] = useState('')
+  const [matchCode, setMatchCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const handleCreateRoom = async () => {
+  const handleCreateMatch = async () => {
     setIsLoading(true)
     setError('')
 
     try {
-      const result = await createRoom(nickname)
+      const result = await createMatch(nickname)
 
       if (result.success && result.matchId) {
         router.push(`/game/${result.matchId}`)
       } else {
-        setError(result.error || '방 생성에 실패했습니다')
+        setError(result.error || 'Failed to create match')
         setIsLoading(false)
       }
     } catch {
-      setError('오류가 발생했습니다')
+      setError('An error occurred')
       setIsLoading(false)
     }
   }
 
-  const handleJoinRoom = async () => {
-    if (!roomCode.trim()) {
-      setError('방 코드를 입력해주세요')
+  const handleJoinMatch = async () => {
+    if (!matchCode.trim()) {
+      setError('Please enter a match code')
       return
     }
 
@@ -100,22 +100,22 @@ export function Lobby({ nickname }: LobbyProps) {
     setError('')
 
     try {
-      const result = await joinRoom(roomCode.trim(), nickname)
+      const result = await joinMatch(matchCode.trim(), nickname)
 
       if (result.success && result.matchId) {
         router.push(`/game/${result.matchId}`)
       } else {
-        setError(result.error || '방에 참가할 수 없습니다')
+        setError(result.error || 'Failed to join match')
         setIsLoading(false)
       }
     } catch {
-      setError('오류가 발생했습니다')
+      setError('An error occurred')
       setIsLoading(false)
     }
   }
 
   return (
-    <main className='flex w-full gap-4'>
+    <main className='flex w-full flex-1 gap-8'>
       <div className='flex flex-col gap-4'>
         <div className='grid grid-cols-2 gap-4'>
           {GAME_MODES.map((mode) => (
@@ -154,14 +154,14 @@ export function Lobby({ nickname }: LobbyProps) {
             <div className='flex h-12'>
               <Input
                 type='text'
-                placeholder='Enter Room Code...'
-                value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                placeholder='Enter Match Code...'
+                value={matchCode}
+                onChange={(e) => setMatchCode(e.target.value.toUpperCase())}
                 maxLength={6}
                 className='h-full flex-1 rounded-2xl rounded-r-none border-none bg-transparent focus-visible:ring-0'
               />
               <button
-                onClick={handleJoinRoom}
+                onClick={handleJoinMatch}
                 disabled={isLoading}
                 className='bg-muted rounded-r-2xl px-4 text-sm font-bold disabled:opacity-50'
               >
@@ -171,7 +171,7 @@ export function Lobby({ nickname }: LobbyProps) {
           </div>
           <Separator />
           <Button
-            onClick={handleCreateRoom}
+            onClick={handleCreateMatch}
             disabled={isLoading}
             size='lg'
             className='h-14 rounded-2xl text-lg font-bold'
@@ -180,24 +180,26 @@ export function Lobby({ nickname }: LobbyProps) {
               <Loader2Icon className='animate-spin' />
             ) : (
               <>
-                <PlusIcon />
-                CREATE ROOM
+                <SwordsIcon />
+                CREATE MATCH
               </>
             )}
           </Button>
 
           {/* Error Message */}
-          {error && <p className='text-center text-sm text-red-400'>{error}</p>}
+          {error && (
+            <p className='text-destructive text-center text-sm'>{error}</p>
+          )}
         </div>
       </div>
 
-      {/* Right Column - Public Rooms */}
+      {/* Right Column - Open Matches */}
       <div className='flex flex-1 flex-col rounded-4xl border'>
         <div className='flex flex-wrap items-center justify-between gap-4 p-8'>
           <div className='flex items-center gap-4'>
             <LayoutGridIcon />
             <div>
-              <h3 className='text-xl leading-none font-bold'>Public Rooms</h3>
+              <h3 className='text-xl leading-none font-bold'>Open Matches</h3>
               <p className='mt-1 text-xs'>
                 <span className='text-muted-foreground font-bold'>
                   Coming Soon
@@ -211,10 +213,10 @@ export function Lobby({ nickname }: LobbyProps) {
           <div className='bg-muted mb-4 flex items-center justify-center rounded-full p-4'>
             <SearchIcon />
           </div>
-          <h4 className='mb-2 text-lg font-bold'>No Public Rooms Yet</h4>
+          <h4 className='mb-2 text-lg font-bold'>No Open Matches Yet</h4>
           <p className='text-muted-foreground max-w-sm text-sm'>
-            Public room matchmaking is coming soon. For now, create a private
-            room and share the code with your friends!
+            Public matchmaking is coming soon. For now, create a private match
+            and share the code with your friends!
           </p>
         </div>
       </div>

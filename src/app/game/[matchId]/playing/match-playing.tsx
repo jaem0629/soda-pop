@@ -16,7 +16,7 @@ import { finishMatch, updatePlayerScore } from '../_lib/actions'
 import { GAME_DURATION } from '../_lib/game-logic'
 import type { MatchPlayer, MatchWithPlayers } from '../_lib/types'
 
-interface PlayRoomProps {
+interface MatchPlayingProps {
   matchId: string
   userId: string
   initialMatch: MatchWithPlayers
@@ -25,23 +25,23 @@ interface PlayRoomProps {
   initialTimeLeft: number
 }
 
-export default function PlayRoom(props: PlayRoomProps) {
+export default function MatchPlaying(props: MatchPlayingProps) {
   return (
     <RealtimeProvider
-      roomId={props.matchId}
+      matchId={props.matchId}
       playerNumber={props.initialPlayer.player_order}
     >
-      <PlayRoomContent {...props} />
+      <MatchPlayingContent {...props} />
     </RealtimeProvider>
   )
 }
 
-function PlayRoomContent({
+function MatchPlayingContent({
   matchId,
   initialPlayer,
   initialOpponent,
   initialTimeLeft,
-}: PlayRoomProps) {
+}: MatchPlayingProps) {
   const router = useRouter()
   const { isConnected, sendScore, sendGameEnd, subscribe } =
     useRealtimeContext()
@@ -70,7 +70,7 @@ function PlayRoomContent({
       if (!saveMyScore()) return
       finishMatch(matchId)
       sendGameEnd()
-      router.push(`/game/${matchId}/result`)
+      router.push(`/game/${matchId}/finished`)
     },
     autoStart: true,
     initialElapsed: GAME_DURATION - initialTimeLeft,
@@ -99,7 +99,7 @@ function PlayRoomContent({
         case 'game_end':
           // Opponent finished first - save my score and navigate
           saveMyScore()
-          router.push(`/game/${matchId}/result`)
+          router.push(`/game/${matchId}/finished`)
           break
       }
     })
