@@ -14,6 +14,7 @@ import { Gamepad2Icon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
 import { signInAsGuest } from '@/app/_lib/actions'
+import { StartPlayingButton } from '@/app/_components/start-playing-button'
 
 export function LoginDialog() {
   const router = useRouter()
@@ -61,10 +62,7 @@ export function LoginDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button className='flex items-center gap-4 rounded-full bg-blue-600 px-8 py-4 text-lg font-bold transition-colors hover:bg-blue-500'>
-          <Gamepad2Icon />
-          Start Playing
-        </button>
+        <StartPlayingButton />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
