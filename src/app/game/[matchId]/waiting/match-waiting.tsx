@@ -200,7 +200,7 @@ function PlayerSlot({ name, isHost }: { name?: string; isHost?: boolean }) {
   return (
     <div
       className={cn(
-        `flex items-center gap-4 rounded-2xl border p-4 transition-colors`,
+        `flex items-center gap-4 rounded-2xl border p-4`,
         isEmpty ? 'border-dashed' : 'border',
       )}
     >

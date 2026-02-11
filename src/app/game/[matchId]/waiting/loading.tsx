@@ -1,10 +1,5 @@
-import { Loader2Icon } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
 
 export default function Loading() {
-  return (
-    <div className='flex flex-col items-center justify-center'>
-      <Loader2Icon className='size-8 animate-spin' />
-      <p className='text-muted-foreground mt-4'>Entering match...</p>
-    </div>
-  )
+  return <Spinner message='Entering match...' />
 }
