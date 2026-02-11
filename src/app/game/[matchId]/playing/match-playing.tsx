@@ -8,6 +8,7 @@ import {
 import { useAutoSave } from '@/hooks/use-auto-save'
 import { useGameTimer } from '@/hooks/use-game-timer'
 import { formatTime } from '@/lib/date'
+import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ConnectionIndicator from '../_components/connection-indicator'
@@ -114,83 +115,71 @@ function MatchPlayingContent({
     sendScore(score)
   }
 
+  const totalScore = myScore + opponentScore || 1
+  const isUrgent = timer.timeLeft <= 10
+
   return (
-    <div className='flex flex-1 flex-col'>
+    <div className='flex h-full flex-col'>
       {/* Game Header */}
-      <header className='flex items-center justify-between border-b border-white/5 bg-[#0B1120]/80 px-4 py-3 backdrop-blur-md lg:px-6'>
+      <header className='flex shrink-0 items-center border-b px-4 py-2'>
         {/* Left - My Score */}
-        <div className='flex items-center gap-3'>
-          <div className='flex size-10 items-center justify-center rounded-full bg-linear-to-br from-cyan-500 to-blue-600 text-sm font-bold text-white shadow-lg'>
+        <div className='flex min-w-0 flex-1 items-center gap-2'>
+          <div className='bg-primary text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold'>
             {initialPlayer.player_name.charAt(0).toUpperCase()}
           </div>
-          <div>
-            <p className='text-sm font-medium text-slate-400'>
+          <div className='min-w-0'>
+            <p className='text-muted-foreground truncate text-sm'>
               {initialPlayer.player_name}
             </p>
-            <p className='text-2xl font-black text-cyan-400 tabular-nums'>
-              {myScore.toLocaleString()}
-            </p>
+            <p className='text-lg font-black'>{myScore.toLocaleString()}</p>
           </div>
         </div>
 
         {/* Center - Timer */}
-        <div className='flex flex-col items-center'>
-          <div
-            className={`rounded-2xl border px-6 py-2 ${
-              timer.timeLeft <= 10
-                ? 'animate-pulse border-red-500/50 bg-red-500/20'
-                : 'border-white/10 bg-[#162032]'
-            }`}
+        <div className='flex shrink-0 flex-col items-center px-4'>
+          <p
+            className={cn(
+              'text-2xl font-black tabular-nums',
+              isUrgent && 'text-destructive',
+            )}
           >
-            <p
-              className={`text-3xl font-black tabular-nums ${
-                timer.timeLeft <= 10 ? 'text-red-400' : 'text-white'
-              }`}
-            >
-              {formatTime(timer.timeLeft)}
-            </p>
-          </div>
-          <p className='mt-1 text-xs font-bold tracking-wider text-slate-500 uppercase'>
+            {formatTime(timer.timeLeft)}
+          </p>
+          <p className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
             Time Left
           </p>
         </div>
 
         {/* Right - Opponent Score */}
-        <div className='flex items-center gap-3'>
-          <div className='text-right'>
-            <p className='text-sm font-medium text-slate-400'>
+        <div className='flex min-w-0 flex-1 items-center justify-end gap-2'>
+          <div className='min-w-0 text-right'>
+            <p className='text-muted-foreground truncate text-sm'>
               {initialOpponent?.player_name ?? 'Opponent'}
             </p>
-            <p className='text-2xl font-black text-purple-400 tabular-nums'>
+            <p className='text-lg font-black'>
               {opponentScore.toLocaleString()}
             </p>
           </div>
-          <div className='flex size-10 items-center justify-center rounded-full bg-linear-to-br from-purple-500 to-pink-600 text-sm font-bold text-white shadow-lg'>
+          <div className='bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold'>
             {initialOpponent?.player_name?.charAt(0).toUpperCase() ?? '?'}
           </div>
         </div>
       </header>
 
       {/* Score Comparison Bar */}
-      <div className='border-b border-white/5 bg-[#162032]/50 px-4 py-2'>
-        <div className='flex h-3 overflow-hidden rounded-full bg-slate-800'>
+      <div className='shrink-0 border-b px-4 py-2'>
+        <div className='bg-muted flex h-2 overflow-hidden rounded-full'>
           <div
-            className='bg-linear-to-r from-cyan-500 to-cyan-400 transition-all duration-300'
+            className='bg-primary transition-all duration-300'
             style={{
-              width: `${Math.max(5, (myScore / (myScore + opponentScore || 1)) * 100)}%`,
-            }}
-          />
-          <div
-            className='bg-linear-to-r from-purple-400 to-purple-500 transition-all duration-300'
-            style={{
-              width: `${Math.max(5, (opponentScore / (myScore + opponentScore || 1)) * 100)}%`,
+              width: `${myScore + opponentScore === 0 ? 50 : (myScore / totalScore) * 100}%`,
             }}
           />
         </div>
       </div>
 
       {/* Game Board */}
-      <main className='flex flex-1 items-center justify-center p-4'>
+      <main className='min-h-0 flex-1 p-4'>
         <GameBoard
           onScoreChange={handleScoreChange}
           disabled={timer.isExpired}

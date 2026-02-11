@@ -1,26 +1,26 @@
 'use client'
 
-import { useRef, useEffect, useReducer, useState } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
+import { ANIMATION_DURATION, type AnimationState } from '../_lib/animation'
 import {
-  renderBoard,
-  getGridPosition,
   BOARD_PX,
   CELL_SIZE,
+  getGridPosition,
+  renderBoard,
 } from '../_lib/canvas-renderer'
 import {
   BOARD_SIZE,
-  swapPieces,
-  findAllMatches,
-  calculateScore,
   calculateDrops,
-  isAdjacent,
+  calculateScore,
   createInitialGameState,
-  type Position,
+  findAllMatches,
+  isAdjacent,
+  swapPieces,
   type Board,
-  type PieceType,
   type DropInfo,
+  type PieceType,
+  type Position,
 } from '../_lib/game-logic'
-import { ANIMATION_DURATION, type AnimationState } from '../_lib/animation'
 
 interface GameBoardProps {
   onScoreChange?: (score: number) => void
@@ -333,26 +333,29 @@ export default function GameBoard({
   }
 
   return (
-    <div className='flex flex-col items-center gap-4'>
-      <div className='text-foreground text-2xl font-bold'>
-        점수: <span className='text-chart-5 tabular-nums'>{state.score}</span>
+    <div className='flex h-full w-full flex-col items-center gap-4'>
+      <div className='text-foreground shrink-0 text-2xl font-bold'>
+        Score: {state.score}
       </div>
 
-      <canvas
-        ref={canvasRef}
-        width={BOARD_PX}
-        height={BOARD_PX}
-        className='bg-card cursor-pointer touch-none rounded-xl shadow-2xl select-none'
-        style={{
-          maxWidth: '100%',
-          height: 'auto',
-        }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onClick={handleClick}
-      />
+      <div className='flex min-h-0 w-full flex-1 items-center justify-center'>
+        <canvas
+          ref={canvasRef}
+          width={BOARD_PX}
+          height={BOARD_PX}
+          className='bg-card cursor-pointer touch-none rounded-xl shadow-2xl select-none'
+          style={{
+            maxWidth: '100%',
+            maxHeight: '100%',
+            aspectRatio: '1 / 1',
+          }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onClick={handleClick}
+        />
+      </div>
     </div>
   )
 }
