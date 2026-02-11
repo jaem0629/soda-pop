@@ -38,13 +38,13 @@ export function useRealtimeContext() {
 
 interface RealtimeProviderProps {
   children: ReactNode
-  roomId: string
+  matchId: string
   playerNumber: number
 }
 
 export function RealtimeProvider({
   children,
-  roomId,
+  matchId,
   playerNumber,
 }: RealtimeProviderProps) {
   const [isConnected, setIsConnected] = useState(false)
@@ -54,7 +54,7 @@ export function RealtimeProvider({
   // Setup channel
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
-    const channel = supabase.channel(`game:${roomId}`, {
+    const channel = supabase.channel(`game:${matchId}`, {
       config: {
         broadcast: { self: false },
       },
@@ -78,7 +78,7 @@ export function RealtimeProvider({
       channelRef.current = null
       setIsConnected(false)
     }
-  }, [roomId])
+  }, [matchId])
 
   // Broadcast helper
   const broadcast = (event: GameEvent) => {

@@ -1,23 +1,24 @@
 'use server'
 
+import { getAuthUser } from '@/app/_lib/queries'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import { getActiveMatch, getAuthUser } from './queries'
+import { getActiveMatch } from './queries'
 
-export async function createRoom(
+export async function createMatch(
   playerName: string,
 ): Promise<{ success: boolean; matchId?: string; error?: string }> {
-  const supabase = await createSupabaseServerClient()
-  const user = await getAuthUser(supabase)
+  const user = await getAuthUser()
 
   if (!user) {
     return { success: false, error: 'Authentication required' }
   }
 
-  const activeMatch = await getActiveMatch(supabase, user.id)
+  const activeMatch = await getActiveMatch(user.id)
   if (activeMatch) {
     return { success: false, error: 'Already in a game' }
   }
+
+  const supabase = await createSupabaseServerClient()
 
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   const randomValues = crypto.getRandomValues(new Uint8Array(6))
@@ -37,7 +38,7 @@ export async function createRoom(
 
   if (matchError || !match) {
     console.error('Match creation failed:', matchError)
-    return { success: false, error: 'Failed to create room' }
+    return { success: false, error: 'Failed to create match' }
   }
 
   const { error: playerError } = await supabase.from('match_players').insert({
@@ -54,31 +55,28 @@ export async function createRoom(
       .from('matches')
       .update({ status: 'abandoned' })
       .eq('id', match.id)
-    return { success: false, error: 'Failed to create room' }
+    return { success: false, error: 'Failed to create match' }
   }
 
   return { success: true, matchId: match.id }
 }
 
-export async function joinRoom(
+export async function joinMatch(
   code: string,
   playerName: string,
 ): Promise<{ success: boolean; matchId?: string; error?: string }> {
-  const supabase = await createSupabaseServerClient()
-  const user = await getAuthUser(supabase)
+  const user = await getAuthUser()
 
   if (!user) {
     return { success: false, error: 'Authentication required' }
   }
 
-  const activeMatch = await getActiveMatch(
-    supabase,
-    user.id,
-    code.toUpperCase(),
-  )
+  const activeMatch = await getActiveMatch(user.id, code.toUpperCase())
   if (activeMatch) {
     return { success: false, error: 'Already in a game' }
   }
+
+  const supabase = await createSupabaseServerClient()
 
   const { data: match, error: matchError } = await supabase
     .from('matches')
@@ -87,7 +85,7 @@ export async function joinRoom(
     .single()
 
   if (matchError || !match) {
-    return { success: false, error: 'Room not found' }
+    return { success: false, error: 'Match not found' }
   }
 
   if (match.status === 'finished' || match.status === 'abandoned') {
@@ -117,7 +115,7 @@ export async function joinRoom(
   }
 
   if (players.length >= match.max_players) {
-    return { success: false, error: 'Room is full' }
+    return { success: false, error: 'Match is full' }
   }
 
   const nextOrder = players.length + 1
@@ -131,20 +129,13 @@ export async function joinRoom(
 
   if (insertError) {
     console.error('Player addition failed:', insertError)
-    return { success: false, error: 'Failed to join room' }
+    return { success: false, error: 'Failed to join match' }
   }
 
   return { success: true, matchId: match.id }
 }
 
 export async function getAuthUserId(): Promise<string | null> {
-  const supabase = await createSupabaseServerClient()
-  const user = await getAuthUser(supabase)
+  const user = await getAuthUser()
   return user?.id ?? null
-}
-
-export async function signOut(): Promise<void> {
-  const supabase = await createSupabaseServerClient()
-  await supabase.auth.signOut()
-  redirect('/')
 }

@@ -1,22 +1,22 @@
 import { getServerUserId } from '@/lib/supabase/auth'
 import { redirect } from 'next/navigation'
 import { getMatch, getPlayerByUserId } from '../_lib/queries'
-import GameResult from './game-result'
+import MatchWaiting from './match-waiting'
 
 interface Props {
-  params: Promise<{ roomId: string }>
+  params: Promise<{ matchId: string }>
 }
 
-export default async function ResultPage({ params }: Props) {
-  const { roomId } = await params
+export default async function WaitingPage({ params }: Props) {
+  const { matchId } = await params
 
   // userId is validated by layout
   const userId = (await getServerUserId())!
 
   // Get data
   const [player, match] = await Promise.all([
-    getPlayerByUserId(roomId, userId),
-    getMatch(roomId),
+    getPlayerByUserId(matchId, userId),
+    getMatch(matchId),
   ])
 
   // Validate player and match exist
@@ -25,18 +25,16 @@ export default async function ResultPage({ params }: Props) {
   }
 
   // If status doesn't match, let index router handle it
-  if (match.status !== 'finished') {
-    redirect(`/game/${roomId}`)
+  if (match.status !== 'waiting' && match.status !== 'matching') {
+    redirect(`/game/${matchId}`)
   }
 
-  const opponent = match.players.find((p) => p.user_id !== userId)
-
   return (
-    <GameResult
-      myPlayer={player!}
-      opponent={opponent}
-      myScore={player!.score}
-      opponentScore={opponent?.score ?? 0}
+    <MatchWaiting
+      matchId={matchId}
+      userId={userId}
+      initialMatch={match}
+      initialPlayer={player!}
     />
   )
 }

@@ -3,22 +3,22 @@ import { redirect } from 'next/navigation'
 import { getMatch, getPlayerByUserId } from '../_lib/queries'
 import { GAME_DURATION } from '../_lib/game-logic'
 import { calculateTimeLeft } from '../_lib/utils'
-import PlayRoom from './play-room'
+import PlayMatch from './match-playing'
 
 interface Props {
-  params: Promise<{ roomId: string }>
+  params: Promise<{ matchId: string }>
 }
 
 export default async function PlayPage({ params }: Props) {
-  const { roomId } = await params
+  const { matchId } = await params
 
   // userId is validated by layout
   const userId = (await getServerUserId())!
 
   // Get data
   const [player, match] = await Promise.all([
-    getPlayerByUserId(roomId, userId),
-    getMatch(roomId),
+    getPlayerByUserId(matchId, userId),
+    getMatch(matchId),
   ])
 
   // Validate player and match exist
@@ -28,7 +28,7 @@ export default async function PlayPage({ params }: Props) {
 
   // If status doesn't match, let index router handle it
   if (match.status !== 'playing') {
-    redirect(`/game/${roomId}`)
+    redirect(`/game/${matchId}`)
   }
 
   const initialTimeLeft = match.started_at
@@ -38,8 +38,8 @@ export default async function PlayPage({ params }: Props) {
   const opponent = match.players.find((p) => p.user_id !== userId)
 
   return (
-    <PlayRoom
-      matchId={roomId}
+    <PlayMatch
+      matchId={matchId}
       userId={userId}
       initialMatch={match}
       initialPlayer={player!}

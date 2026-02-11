@@ -3,18 +3,18 @@ import { redirect } from 'next/navigation'
 import { getMatch } from './_lib/queries'
 
 interface Props {
-  params: Promise<{ roomId: string }>
+  params: Promise<{ matchId: string }>
 }
 
-export default async function GameRoomPage({ params }: Props) {
-  const { roomId } = await params
+export default async function GameMatchPage({ params }: Props) {
+  const { matchId } = await params
 
   // userId is validated by layout, only check match here
-  const match = await getMatch(roomId)
+  const match = await getMatch(matchId)
 
   if (!match) {
     redirect('/')
   }
 
-  redirect(getMatchRoute(roomId, match.status))
+  redirect(getMatchRoute(matchId, match.status))
 }
