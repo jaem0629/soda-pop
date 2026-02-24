@@ -1,6 +1,6 @@
 # Soda Pop
 
-Real-time 2-player puzzle battle game
+Real-time multiplayer match-3 puzzle battle game.
 
 ## Demo
 
@@ -8,17 +8,38 @@ Real-time 2-player puzzle battle game
 
 ## Features
 
-- **Real-time Multiplayer** - Battle with friends in real-time
-- **Match-3 Puzzle** - Connect 3 or more blocks to pop them
-- **60-Second Time Attack** - Compete for the highest score
-- **Room Code System** - Play with friends using 6-digit codes
+- **Real-time Multiplayer** — Battle with friends in real-time using Supabase Realtime
+- **Match-3 Puzzle** — Swap pieces on an 8×8 board to match 3 or more of the same color
+- **60-Second Time Attack** — Compete for the highest score before time runs out
+- **Chain Combos** — Trigger cascading reactions for bonus multipliers
+- **Match Code System** — Create or join private matches with 6-digit codes
+- **Live Score Sync** — Watch your opponent's score update in real-time
+
+## Game Modes
+
+| Mode       | Players | Description                  | Status       |
+| ---------- | ------- | ---------------------------- | ------------ |
+| **Battle** | 2       | Ranked PvP                   | Available    |
+| **Solo**   | 1       | Practice                     | Coming Soon  |
+| **Co-op**  | 4       | Team Up                      | Coming Soon  |
+| **Custom** | 2–8     | Private Match                | Coming Soon  |
+
+## Game Mechanics
+
+- **Board**: 8×8 grid with 6 piece types
+- **Scoring**: 10 base points per match
+  - 3 pieces → ×1, 4 pieces → ×2, 5+ pieces → ×3
+  - Combo bonus: ×(1 + combo × 0.5)
+- **Duration**: 60 seconds per match
 
 ## Tech Stack
 
-- **Frontend**: Next.js 15, React, TypeScript
-- **Styling**: Tailwind CSS v4
-- **Backend**: Supabase (Database + Realtime)
+- **Framework**: Next.js 16, React 19, TypeScript
+- **Styling**: Tailwind CSS v4, shadcn/ui, Radix UI
+- **Backend**: Supabase (PostgreSQL, Auth, Realtime)
 - **Rendering**: HTML5 Canvas
+- **Auth Protection**: Cloudflare Turnstile
+- **Analytics**: Vercel Analytics, Speed Insights
 - **Deployment**: Vercel
 
 ## Getting Started
@@ -40,12 +61,8 @@ Real-time 2-player puzzle battle game
 ### Installation
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Set up environment variables
 cp .env.local.example .env.local
-# Edit .env.local with your credentials
 ```
 
 ### Database Setup
@@ -56,7 +73,7 @@ Run the SQL schema in your Supabase SQL Editor:
 # Copy contents of supabase/schema.sql to Supabase SQL Editor and execute
 ```
 
-### Run Development Server
+### Development
 
 ```bash
 pnpm dev
@@ -64,11 +81,12 @@ pnpm dev
 
 ## How to Play
 
-1. Enter your nickname
-2. **Create a room** or **Join a room** (6-digit code)
-3. Wait for opponent to join, then start the game
-4. Match 3 or more same-colored blocks to pop them
-5. Get the higher score within 60 seconds to win!
+1. Sign in and enter the lobby
+2. **Create a match** or **Join** an existing one with a 6-digit code
+3. Wait for your opponent to join, then the host starts the game
+4. Swap adjacent pieces to match 3 or more of the same color
+5. Chain combos for higher multipliers
+6. Score the most points within 60 seconds to win!
 
 ## License
 
