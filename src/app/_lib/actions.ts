@@ -7,6 +7,11 @@ export async function signInAsGuest(
   nickname: string,
   captchaToken: string,
 ): Promise<{ success: boolean; error?: string }> {
+  const trimmed = nickname.trim()
+  if (trimmed.length === 0 || trimmed.length > 20) {
+    return { success: false, error: 'Nickname must be 1-20 characters' }
+  }
+
   const supabase = await createSupabaseServerClient()
 
   let {
@@ -29,7 +34,7 @@ export async function signInAsGuest(
   const { error: profileError } = await supabase.from('users').upsert(
     {
       id: user.id,
-      username: nickname,
+      username: trimmed,
     },
     {
       onConflict: 'id',

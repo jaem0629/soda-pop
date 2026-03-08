@@ -1,7 +1,7 @@
 import { getMatchRoute } from '@/app/_lib/routing'
 import { getAuthUser } from '@/app/_lib/queries'
 import { redirect } from 'next/navigation'
-import { getActiveMatch, getUserProfile } from './_lib/queries'
+import { getActiveMatch, getUserProfile, getWaitingRooms } from './_lib/queries'
 import { Lobby } from './lobby'
 
 export default async function LobbyPage() {
@@ -11,10 +11,10 @@ export default async function LobbyPage() {
     redirect('/')
   }
 
-  // Run queries in parallel
-  const [activeMatch, profile] = await Promise.all([
+  const [activeMatch, profile, rooms] = await Promise.all([
     getActiveMatch(user.id),
     getUserProfile(user.id),
+    getWaitingRooms(),
   ])
 
   if (activeMatch) {
@@ -23,5 +23,5 @@ export default async function LobbyPage() {
 
   const nickname = profile?.username ?? 'Unknown'
 
-  return <Lobby nickname={nickname} />
+  return <Lobby nickname={nickname} rooms={rooms} />
 }

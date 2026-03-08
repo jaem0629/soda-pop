@@ -17,12 +17,12 @@ Real-time multiplayer match-3 puzzle battle game.
 
 ## Game Modes
 
-| Mode       | Players | Description                  | Status       |
-| ---------- | ------- | ---------------------------- | ------------ |
-| **Battle** | 2       | Ranked PvP                   | Available    |
-| **Solo**   | 1       | Practice                     | Coming Soon  |
-| **Co-op**  | 4       | Team Up                      | Coming Soon  |
-| **Custom** | 2–8     | Private Match                | Coming Soon  |
+| Mode       | Players | Description   | Status      |
+| ---------- | ------- | ------------- | ----------- |
+| **Battle** | 2       | Ranked PvP    | Available   |
+| **Solo**   | 1       | Practice      | Coming Soon |
+| **Co-op**  | 4       | Team Up       | Coming Soon |
+| **Custom** | 2–8     | Private Match | Coming Soon |
 
 ## Game Mechanics
 

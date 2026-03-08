@@ -1,7 +1,6 @@
 'use client'
 
 import { signOut } from '@/app/_lib/actions'
-import { Button } from '@/components/ui/button'
 import { useTransition } from 'react'
 
 interface UserMenuProps {
@@ -19,23 +18,21 @@ export function UserMenu({ nickname }: UserMenuProps) {
 
   return (
     <div className='flex items-center gap-4'>
-      <div className='flex items-center gap-2 rounded-full'>
-        <div className='bg-muted flex size-8 items-center justify-center rounded-full'>
+      <div className='flex items-center gap-2'>
+        <div className='flex size-8 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-purple-500'>
           <span className='text-sm font-bold'>
             {nickname.charAt(0).toUpperCase()}
           </span>
         </div>
-        <span className='text-sm font-medium'>{nickname}</span>
+        <span className='text-sm font-medium text-white/70'>{nickname}</span>
       </div>
-      <Button
+      <button
         onClick={handleSignOut}
         disabled={isPending}
-        variant='outline'
-        size='sm'
-        className='text-xs'
+        className='rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold transition-colors hover:bg-white/20 disabled:opacity-50'
       >
         {isPending ? 'Signing out...' : 'Sign Out'}
-      </Button>
+      </button>
     </div>
   )
 }

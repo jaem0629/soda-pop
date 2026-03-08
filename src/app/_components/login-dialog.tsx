@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from '@/app/_components/dialog'
 import type { TurnstileInstance } from '@marsidev/react-turnstile'
 import { Turnstile } from '@marsidev/react-turnstile'
 import { Gamepad2Icon } from 'lucide-react'
@@ -75,13 +75,12 @@ export function LoginDialog() {
         <div className='space-y-4'>
           {!showGuestLogin ? (
             <>
-              {/* SSO Login Button (Disabled) */}
               <button
                 onClick={handleSSOLogin}
                 disabled
-                className='flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800 px-6 py-3 font-medium transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50'
+                className='flex w-full items-center justify-center gap-3 rounded-2xl bg-white/5 px-6 py-3 font-medium transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40'
               >
-                <svg className='h-5 w-5' viewBox='0 0 24 24'>
+                <svg className='size-5' viewBox='0 0 24 24'>
                   <path
                     fill='currentColor'
                     d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z'
@@ -100,17 +99,16 @@ export function LoginDialog() {
                   />
                 </svg>
                 Continue with Google
-                <span className='text-muted-foreground ml-auto text-xs'>
+                <span className='ml-auto text-xs text-white/40'>
                   Coming soon
                 </span>
               </button>
 
-              {/* Guest Login Button */}
               <button
                 onClick={handleGuestLogin}
-                className='flex w-full items-center justify-center gap-3 rounded-lg bg-blue-600 px-6 py-3 font-medium transition-colors hover:bg-blue-500'
+                className='flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-blue-500 to-purple-500 px-6 py-3 font-bold transition-opacity hover:opacity-90'
               >
-                <Gamepad2Icon className='h-5 w-5' />
+                <Gamepad2Icon className='size-5' />
                 Continue as Guest
               </button>
             </>

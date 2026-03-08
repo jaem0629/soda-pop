@@ -17,10 +17,10 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang='ko' className={`${GeistSans.className} dark`}>
+    <html lang='ko' className={GeistSans.className}>
       <body className='flex h-svh flex-col antialiased'>
         <Header />
-        <div className='flex flex-1 flex-col min-h-0 bg-background mx-auto w-full max-w-6xl px-16 py-8'>
+        <div className='mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-16 py-8'>
           {children}
         </div>
         <Suspense fallback={null}>

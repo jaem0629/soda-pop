@@ -333,29 +333,23 @@ export default function GameBoard({
   }
 
   return (
-    <div className='flex h-full w-full flex-col items-center gap-4'>
-      <div className='text-foreground shrink-0 text-2xl font-bold'>
-        Score: {state.score}
-      </div>
-
-      <div className='flex min-h-0 w-full flex-1 items-center justify-center'>
-        <canvas
-          ref={canvasRef}
-          width={BOARD_PX}
-          height={BOARD_PX}
-          className='bg-card cursor-pointer touch-none rounded-xl shadow-2xl select-none'
-          style={{
-            maxWidth: '100%',
-            maxHeight: '100%',
-            aspectRatio: '1 / 1',
-          }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          onClick={handleClick}
-        />
-      </div>
+    <div className='flex h-full w-full items-center justify-center'>
+      <canvas
+        ref={canvasRef}
+        width={BOARD_PX}
+        height={BOARD_PX}
+        className='cursor-pointer touch-none rounded-2xl shadow-2xl shadow-purple-500/20 select-none'
+        style={{
+          maxWidth: '100%',
+          maxHeight: '100%',
+          aspectRatio: '1 / 1',
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onClick={handleClick}
+      />
     </div>
   )
 }

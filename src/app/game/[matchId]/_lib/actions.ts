@@ -13,6 +13,7 @@ export async function startMatch(matchId: string): Promise<Match | null> {
       started_at: new Date().toISOString(),
     })
     .eq('id', matchId)
+    .eq('status', 'waiting')
     .select()
     .single()
 
@@ -55,6 +56,7 @@ export async function finishMatch(matchId: string): Promise<boolean> {
       finished_at: new Date().toISOString(),
     })
     .eq('id', matchId)
+    .eq('status', 'playing')
 
   if (error) {
     console.error('Failed to finish game:', error)
@@ -72,6 +74,7 @@ export async function leaveMatch(matchId: string): Promise<boolean> {
     .from('matches')
     .update({ status: 'abandoned' })
     .eq('id', matchId)
+    .in('status', ['waiting', 'matching'])
 
   if (error) {
     console.error('Failed to leave match:', error)
@@ -82,17 +85,20 @@ export async function leaveMatch(matchId: string): Promise<boolean> {
 }
 
 /** Non-host player leaves - only removes themselves from the match */
-export async function leaveMatchAsPlayer(
-  matchId: string,
-  playerId: string,
-): Promise<boolean> {
+export async function leaveMatchAsPlayer(matchId: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return false
 
   const { error } = await supabase
     .from('match_players')
     .delete()
     .eq('match_id', matchId)
-    .eq('id', playerId)
+    .eq('user_id', user.id)
 
   if (error) {
     console.error('Failed to leave match as player:', error)

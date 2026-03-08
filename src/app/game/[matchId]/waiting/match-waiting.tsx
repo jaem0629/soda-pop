@@ -1,6 +1,5 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
 import {
   RealtimeProvider,
   useRealtimeContext,
@@ -47,8 +46,13 @@ function MatchWaitingContent({
   initialPlayer,
 }: MatchWaitingProps) {
   const router = useRouter()
-  const { isConnected, sendGameStart, sendPlayerJoined, subscribe } =
-    useRealtimeContext()
+  const {
+    isConnected,
+    sendGameStart,
+    sendPlayerJoined,
+    sendMatchAbandoned,
+    subscribe,
+  } = useRealtimeContext()
 
   const [match, setMatch] = useState(initialMatch)
   const myPlayer =
@@ -65,19 +69,20 @@ function MatchWaitingContent({
     }
   }
 
-  // Listen for DB changes (player join/leave)
   useRealtimeDB({
     table: 'match_players',
     filter: `match_id=eq.${matchId}`,
     onUpdate: reloadMatch,
   })
 
-  // Handle game events (DB changes are handled by useRealtimeDB)
   useEffect(() => {
     const unsubscribe = subscribe((event: GameEvent) => {
       switch (event.type) {
         case 'game_start':
           router.push(`/game/${matchId}/playing`)
+          break
+        case 'match_abandoned':
+          router.push('/lobby')
           break
       }
     })
@@ -85,14 +90,12 @@ function MatchWaitingContent({
     return unsubscribe
   }, [subscribe, matchId, router])
 
-  // Send player joined event when connected (for non-host)
   useEffect(() => {
     if (isConnected && !isHost) {
       sendPlayerJoined(myPlayer.player_name)
     }
   }, [isConnected, isHost, sendPlayerJoined, myPlayer.player_name])
 
-  // Start game handler
   const handleStartGame = async () => {
     if (!canStart) return
 
@@ -103,50 +106,59 @@ function MatchWaitingContent({
     }
   }
 
-  // Leave match handler
   const handleLeaveMatch = async () => {
     if (isHost) {
-      // Host leaving abandons the entire match
+      sendMatchAbandoned()
       await leaveMatch(matchId)
     } else {
-      // Non-host only removes themselves
-      await leaveMatchAsPlayer(matchId, myPlayer.id)
+      await leaveMatchAsPlayer(matchId)
     }
     router.push('/lobby')
   }
 
   const [copied, setCopied] = useState(false)
 
-  const copyCode = () => {
-    if (match.code) {
-      navigator.clipboard.writeText(match.code)
+  const copyCode = async () => {
+    if (!match.code) return
+    try {
+      await navigator.clipboard.writeText(match.code)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Clipboard API not available or permission denied
     }
   }
 
   return (
-    <div className='mx-auto flex max-w-sm flex-1 flex-col items-center justify-center'>
-      {/* Header */}
-      <h1 className='mb-4 text-2xl font-bold'>Match Code</h1>
-
+    <div className='mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-10'>
       {/* Match Code */}
-      <button
-        onClick={copyCode}
-        className='mb-16 flex w-full cursor-copy items-center gap-4 rounded-2xl border px-8 py-4'
-      >
-        <span className='text-4xl font-black tracking-[1rem]'>
-          {match.code ?? '----'}
-        </span>
-        <span>{copied ? <CheckIcon /> : <CopyIcon />}</span>
-      </button>
+      <div className='flex w-full flex-col items-center gap-2'>
+        <p className='text-xs font-semibold tracking-widest text-white/40 uppercase'>
+          Match Code
+        </p>
+        <button
+          onClick={copyCode}
+          className='group flex w-full items-center justify-center gap-4 rounded-2xl px-8 py-4'
+        >
+          <span className='text-4xl font-black tracking-widest text-blue-400'>
+            {match.code ?? '----'}
+          </span>
+          <span className='text-white/30 transition-colors group-hover:text-white/60'>
+            {copied ? (
+              <CheckIcon className='size-5' />
+            ) : (
+              <CopyIcon className='size-5' />
+            )}
+          </span>
+        </button>
+      </div>
 
       {/* Players */}
-      <div className='mb-8 w-full'>
-        <p className='text-muted-foreground mb-4 text-center text-xs font-medium tracking-wider uppercase'>
+      <div className='w-full'>
+        <p className='mb-4 text-center text-xs font-semibold tracking-widest text-white/40 uppercase'>
           Players {match.players.length}/{match.max_players}
         </p>
-        <div className='flex flex-col gap-4'>
+        <div className='flex flex-col gap-3'>
           <PlayerSlot
             name={
               myPlayer.player_order === 1
@@ -155,6 +167,13 @@ function MatchWaitingContent({
             }
             isHost
           />
+
+          <div className='flex items-center gap-4 px-4'>
+            <div className='h-px flex-1 bg-white/10' />
+            <span className='text-xs font-bold text-white/20'>VS</span>
+            <div className='h-px flex-1 bg-white/10' />
+          </div>
+
           <PlayerSlot
             name={
               myPlayer.player_order === 2
@@ -166,27 +185,22 @@ function MatchWaitingContent({
       </div>
 
       {/* Actions */}
-      <div className='flex w-full flex-col gap-4'>
-        {canStart ? (
-          <Button onClick={handleStartGame} size='lg' className='w-full'>
-            <PlayIcon className='size-4' />
-            Start Game
-          </Button>
-        ) : (
-          <>
-            <p className='text-muted-foreground text-center text-sm'>
-              {!opponent && isHost && 'Share the code with your friend!'}
-              {opponent && !isHost && 'Waiting for host to start...'}
-            </p>
-            <Button
-              variant='ghost'
-              onClick={handleLeaveMatch}
-              className='w-full'
-            >
-              Leave Match
-            </Button>
-          </>
-        )}
+      <div className='flex w-full gap-8'>
+        <button
+          onClick={handleLeaveMatch}
+          className='w-full rounded-2xl bg-white/10 py-3 text-sm font-semibold transition-colors hover:bg-white/20'
+        >
+          Leave Match
+        </button>
+
+        <button
+          onClick={handleStartGame}
+          disabled={!canStart}
+          className='flex h-14 w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-blue-500 to-purple-500 text-lg font-bold transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-50'
+        >
+          <PlayIcon className='size-5' />
+          Start Game
+        </button>
       </div>
 
       <ConnectionIndicator isConnected={isConnected} />
@@ -200,43 +214,42 @@ function PlayerSlot({ name, isHost }: { name?: string; isHost?: boolean }) {
   return (
     <div
       className={cn(
-        `flex items-center gap-4 rounded-2xl border p-4`,
-        isEmpty ? 'border-dashed' : 'border',
+        'flex items-center gap-4 rounded-2xl p-4',
+        isEmpty ? 'border border-dashed border-white/10' : 'bg-white/5',
       )}
     >
-      {/* Avatar */}
       <div
         className={cn(
-          `flex size-10 items-center justify-center rounded-full`,
+          'flex size-10 items-center justify-center rounded-full',
           isEmpty
-            ? 'bg-muted text-muted-foreground'
-            : 'bg-primary text-primary-foreground',
+            ? 'bg-white/10 text-white/30'
+            : isHost
+              ? 'bg-amber-500/20 text-amber-400'
+              : 'bg-blue-500/20 text-blue-400',
         )}
       >
         {isHost ? (
-          <CrownIcon className='size-4' />
+          <CrownIcon className='size-5' />
         ) : (
-          <UserIcon className='size-4' />
+          <UserIcon className='size-5' />
         )}
       </div>
 
-      {/* Info */}
       <div className='min-w-0 flex-1'>
         {isEmpty ? (
-          <p className='text-muted-foreground text-sm'>Waiting...</p>
+          <p className='text-sm text-white/30'>Waiting...</p>
         ) : (
           <>
             <p className='truncate font-semibold'>{name}</p>
-            <p className='text-muted-foreground text-xs'>
+            <p className='text-xs text-white/40'>
               {isHost ? 'Host' : 'Player'}
             </p>
           </>
         )}
       </div>
 
-      {/* Status */}
       {!isEmpty && (
-        <div className='size-2 animate-pulse rounded-full bg-green-500' />
+        <div className='size-2 animate-pulse rounded-full bg-green-400' />
       )}
     </div>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { Spinner } from '@/components/ui/spinner'
+import { Spinner } from '@/app/_components/spinner'
 import { useSingleConnection } from '@/hooks/use-single-connection'
 import { CircleSlashIcon } from 'lucide-react'
 import type { ReactNode } from 'react'

@@ -1,4 +1,4 @@
-import { Spinner } from '@/components/ui/spinner'
+import { Spinner } from '@/app/_components/spinner'
 
 export default function Loading() {
   return <Spinner message='Loading lobby...' />

@@ -209,10 +209,11 @@ CREATE POLICY "matches_update" ON public.matches FOR UPDATE
     )
   );
 
--- match_players: Free to read/create, can only update own data
+-- match_players: Free to read/create, can only update/delete own data
 CREATE POLICY "match_players_select" ON public.match_players FOR SELECT USING (true);
 CREATE POLICY "match_players_insert" ON public.match_players FOR INSERT WITH CHECK (true);
 CREATE POLICY "match_players_update" ON public.match_players FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "match_players_delete" ON public.match_players FOR DELETE USING (auth.uid() = user_id);
 
 -- matchmaking_queue: Can only manage own queue
 -- TODO: auth.uid() 체크 추가

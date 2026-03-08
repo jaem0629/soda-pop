@@ -86,16 +86,8 @@ function drawBackground(ctx: CanvasRenderingContext2D): void {
 }
 
 function drawSelection(ctx: CanvasRenderingContext2D, pos: Position): void {
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.1)'
   ctx.fillRect(pos.col * CELL_SIZE, pos.row * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-  ctx.strokeStyle = '#FFD700'
-  ctx.lineWidth = 3
-  ctx.strokeRect(
-    pos.col * CELL_SIZE + 2,
-    pos.row * CELL_SIZE + 2,
-    CELL_SIZE - 4,
-    CELL_SIZE - 4,
-  )
 }
 
 function renderMatchAndDropAnimation(

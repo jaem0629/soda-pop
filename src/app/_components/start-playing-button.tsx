@@ -7,10 +7,10 @@ export const StartPlayingButton = forwardRef<
 >((props, ref) => (
   <button
     ref={ref}
-    className='flex cursor-pointer items-center gap-4 rounded-full bg-blue-600 px-8 py-4 text-lg font-bold hover:bg-blue-500'
+    className='flex cursor-pointer items-center gap-4 rounded-full bg-linear-to-r from-blue-500 to-purple-500 px-10 py-5 text-xl font-bold'
     {...props}
   >
-    <Gamepad2Icon />
+    <Gamepad2Icon className='size-6' />
     Start Playing
   </button>
 ))

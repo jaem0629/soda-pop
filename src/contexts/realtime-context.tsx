@@ -16,6 +16,7 @@ export type GameEvent =
   | { type: 'game_start' }
   | { type: 'score_update'; playerNumber: number; score: number }
   | { type: 'game_end' }
+  | { type: 'match_abandoned' }
 
 type RealtimeContextType = {
   isConnected: boolean
@@ -23,6 +24,7 @@ type RealtimeContextType = {
   sendGameStart: () => void
   sendGameEnd: () => void
   sendPlayerJoined: (playerName: string) => void
+  sendMatchAbandoned: () => void
   subscribe: (callback: (event: GameEvent) => void) => () => void
 }
 
@@ -51,7 +53,6 @@ export function RealtimeProvider({
   const channelRef = useRef<RealtimeChannel | null>(null)
   const subscribersRef = useRef<Set<(event: GameEvent) => void>>(new Set())
 
-  // Setup channel
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
     const channel = supabase.channel(`game:${matchId}`, {
@@ -80,7 +81,6 @@ export function RealtimeProvider({
     }
   }, [matchId])
 
-  // Broadcast helper
   const broadcast = (event: GameEvent) => {
     channelRef.current?.send({
       type: 'broadcast',
@@ -105,6 +105,10 @@ export function RealtimeProvider({
     broadcast({ type: 'player_joined', playerName })
   }
 
+  const sendMatchAbandoned = () => {
+    broadcast({ type: 'match_abandoned' })
+  }
+
   const subscribe = (callback: (event: GameEvent) => void) => {
     subscribersRef.current.add(callback)
     return () => {
@@ -112,17 +116,18 @@ export function RealtimeProvider({
     }
   }
 
-  const value: RealtimeContextType = {
-    isConnected,
-    sendScore,
-    sendGameStart,
-    sendGameEnd,
-    sendPlayerJoined,
-    subscribe,
-  }
-
   return (
-    <RealtimeContext.Provider value={value}>
+    <RealtimeContext.Provider
+      value={{
+        isConnected,
+        sendScore,
+        sendGameStart,
+        sendGameEnd,
+        sendPlayerJoined,
+        sendMatchAbandoned,
+        subscribe,
+      }}
+    >
       {children}
     </RealtimeContext.Provider>
   )

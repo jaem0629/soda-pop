@@ -4,8 +4,18 @@ import { getAuthUser } from '@/app/_lib/queries'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { getActiveMatch } from './queries'
 
+type GameMode = 'solo' | 'battle' | 'coop' | 'custom'
+
+const MODE_MAX_PLAYERS: Record<GameMode, number> = {
+  solo: 1,
+  battle: 2,
+  coop: 4,
+  custom: 8,
+}
+
 export async function createMatch(
   playerName: string,
+  mode: GameMode = 'battle',
 ): Promise<{ success: boolean; matchId?: string; error?: string }> {
   const user = await getAuthUser()
 
@@ -27,10 +37,10 @@ export async function createMatch(
   const { data: match, error: matchError } = await supabase
     .from('matches')
     .insert({
-      mode: 'battle',
+      mode,
       entry_type: 'private',
       code,
-      max_players: 2,
+      max_players: MODE_MAX_PLAYERS[mode],
       status: 'waiting',
     })
     .select()
