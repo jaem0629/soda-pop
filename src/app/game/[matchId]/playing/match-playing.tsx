@@ -15,11 +15,12 @@ import ConnectionIndicator from '../_components/connection-indicator'
 import GameBoard from '../_components/game-board'
 import { finishMatch, updatePlayerScore } from '../_lib/actions'
 import { GAME_DURATION } from '../_lib/game-logic'
-import type { MatchPlayer, MatchWithPlayers } from '../_lib/types'
+import type { GameMode, MatchPlayer, MatchWithPlayers } from '../_lib/types'
 
 interface MatchPlayingProps {
   matchId: string
   userId: string
+  mode: GameMode
   initialMatch: MatchWithPlayers
   initialPlayer: MatchPlayer
   initialOpponent: MatchPlayer | undefined
@@ -27,17 +28,97 @@ interface MatchPlayingProps {
 }
 
 export default function MatchPlaying(props: MatchPlayingProps) {
+  if (props.mode === 'solo') {
+    return <SoloPlayingContent {...props} />
+  }
+
   return (
     <RealtimeProvider
       matchId={props.matchId}
       playerNumber={props.initialPlayer.player_order}
     >
-      <MatchPlayingContent {...props} />
+      <BattlePlayingContent {...props} />
     </RealtimeProvider>
   )
 }
 
-function MatchPlayingContent({
+function SoloPlayingContent({
+  matchId,
+  initialPlayer,
+  initialTimeLeft,
+}: MatchPlayingProps) {
+  const router = useRouter()
+
+  const [myScore, setMyScore] = useState(initialPlayer.score)
+  const gameEndSentRef = useRef(false)
+  const scoreRef = useRef(initialPlayer.score)
+
+  const saveMyScore = useCallback(() => {
+    if (gameEndSentRef.current) return false
+    gameEndSentRef.current = true
+    updatePlayerScore(matchId, initialPlayer.player_order, scoreRef.current)
+    return true
+  }, [matchId, initialPlayer.player_order])
+
+  const timer = useGameTimer({
+    duration: GAME_DURATION,
+    onExpire: () => {
+      if (!saveMyScore()) return
+      finishMatch(matchId)
+      router.push(`/game/${matchId}/finished`)
+    },
+    autoStart: true,
+    initialElapsed: GAME_DURATION - initialTimeLeft,
+  })
+
+  useAutoSave({
+    getData: () => scoreRef.current,
+    onSave: async (score) => {
+      await updatePlayerScore(matchId, initialPlayer.player_order, score)
+    },
+    intervalMs: 10000,
+    saveOnUnload: true,
+    enabled: !timer.isExpired,
+    isEqual: (prev, current) => prev === current,
+  })
+
+  const handleScoreChange = (score: number) => {
+    setMyScore(score)
+    scoreRef.current = score
+  }
+
+  const isUrgent = timer.timeLeft <= 10
+
+  return (
+    <div className='flex h-full flex-col'>
+      <div className='shrink-0 px-4 py-3'>
+        <div className='flex flex-col items-center gap-1'>
+          <p
+            className={cn(
+              'text-4xl font-black tabular-nums transition-colors',
+              isUrgent && 'animate-pulse text-red-400',
+            )}
+          >
+            {formatTime(timer.timeLeft)}
+          </p>
+          <p className='bg-linear-to-r from-green-400 to-emerald-300 bg-clip-text text-3xl font-black text-transparent tabular-nums'>
+            {myScore.toLocaleString()}
+          </p>
+        </div>
+      </div>
+
+      <main className='min-h-0 flex-1 px-4 pb-4'>
+        <GameBoard
+          onScoreChange={handleScoreChange}
+          disabled={timer.isExpired}
+          initialScore={myScore}
+        />
+      </main>
+    </div>
+  )
+}
+
+function BattlePlayingContent({
   matchId,
   initialPlayer,
   initialOpponent,
@@ -115,10 +196,8 @@ function MatchPlayingContent({
 
   return (
     <div className='flex h-full flex-col'>
-      {/* Score HUD */}
       <div className='shrink-0 px-4 py-3'>
         <div className='flex items-center gap-3'>
-          {/* Left - My info + bar */}
           <div className='flex min-w-0 flex-1 items-center gap-2'>
             <div className='flex size-8 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-purple-500 text-xs font-bold'>
               {initialPlayer.player_name.charAt(0).toUpperCase()}
@@ -150,7 +229,6 @@ function MatchPlayingContent({
             </div>
           </div>
 
-          {/* Center - Timer */}
           <div className='flex shrink-0 flex-col items-center px-8'>
             <p
               className={cn(
@@ -162,7 +240,6 @@ function MatchPlayingContent({
             </p>
           </div>
 
-          {/* Right - Opponent info + bar */}
           <div className='flex min-w-0 flex-1 items-center gap-2'>
             <div className='min-w-0 flex-1'>
               <div className='flex items-baseline justify-between'>
@@ -189,7 +266,6 @@ function MatchPlayingContent({
         </div>
       </div>
 
-      {/* Game Board */}
       <main className='min-h-0 flex-1 px-4 pb-4'>
         <GameBoard
           onScoreChange={handleScoreChange}

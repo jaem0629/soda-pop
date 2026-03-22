@@ -1,29 +1,37 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { createMatch, joinMatch } from './_lib/actions'
-import type { WaitingRoom } from './_lib/queries'
-import { MatchActions } from './_components/match-actions'
-import { RoomList } from './_components/room-list'
+import { createMatch, joinMatch, joinMatchById } from './_lib/actions'
+import type { LeaderboardEntry, WaitingMatch } from './_lib/queries'
+import { Leaderboard } from './_components/leaderboard'
+import { MatchList } from './_components/match-list'
 
 interface LobbyProps {
   nickname: string
-  rooms: WaitingRoom[]
+  matches: WaitingMatch[]
+  soloLeaderboard: LeaderboardEntry[]
+  battleLeaderboard: LeaderboardEntry[]
 }
 
-export function Lobby({ nickname, rooms }: LobbyProps) {
+export function Lobby({
+  nickname,
+  matches,
+  soloLeaderboard,
+  battleLeaderboard,
+}: LobbyProps) {
   const router = useRouter()
 
-  const handleCreateRoom = async (mode: string) => {
+  const handleCreateMatch = async (mode: string, entryType: string) => {
     const result = await createMatch(
       nickname,
-      mode as 'solo' | 'battle' | 'coop' | 'custom',
+      mode as 'solo' | 'battle',
+      entryType as 'private' | 'public',
     )
 
     if (result.success && result.matchId) {
       router.push(`/game/${result.matchId}`)
     } else {
-      throw new Error(result.error || 'Failed to create room')
+      throw new Error(result.error || 'Failed to create match')
     }
   }
 
@@ -37,13 +45,33 @@ export function Lobby({ nickname, rooms }: LobbyProps) {
     }
   }
 
+  const handleJoinMatchById = async (matchId: string) => {
+    const result = await joinMatchById(matchId, nickname)
+
+    if (result.success && result.matchId) {
+      router.push(`/game/${result.matchId}`)
+    } else {
+      throw new Error(result.error || 'Failed to join match')
+    }
+  }
+
   return (
-    <main className='flex flex-1 flex-col gap-6'>
-      <MatchActions
-        onCreateRoom={handleCreateRoom}
-        onJoinMatch={handleJoinMatch}
-      />
-      <RoomList rooms={rooms} onJoinRoom={handleJoinMatch} />
+    <main className='flex flex-1 gap-6'>
+      <div className='flex min-w-0 flex-1 flex-col'>
+        <MatchList
+          matches={matches}
+          onJoinMatch={handleJoinMatch}
+          onJoinMatchById={handleJoinMatchById}
+          onCreateMatch={handleCreateMatch}
+        />
+      </div>
+
+      <div className='hidden w-80 shrink-0 lg:block'>
+        <Leaderboard
+          soloEntries={soloLeaderboard}
+          battleEntries={battleLeaderboard}
+        />
+      </div>
     </main>
   )
 }

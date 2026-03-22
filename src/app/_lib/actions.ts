@@ -31,6 +31,13 @@ export async function signInAsGuest(
     user = data.user
   }
 
+  const { data: banned } = await supabase.rpc('is_banned_word', {
+    input: trimmed,
+  })
+  if (banned) {
+    return { success: false, error: 'Nickname contains inappropriate language' }
+  }
+
   const { error: profileError } = await supabase.from('users').upsert(
     {
       id: user.id,
@@ -43,10 +50,76 @@ export async function signInAsGuest(
 
   if (profileError) {
     console.error('User profile creation failed:', profileError)
+    if (profileError.code === '23505') {
+      return { success: false, error: 'Nickname already taken' }
+    }
     return { success: false, error: 'Profile creation failed' }
   }
 
   return { success: true }
+}
+
+export async function updateNickname(
+  newNickname: string,
+): Promise<{ success: boolean; error?: string }> {
+  const trimmed = newNickname.trim()
+  if (trimmed.length === 0 || trimmed.length > 20) {
+    return { success: false, error: 'Nickname must be 1-20 characters' }
+  }
+
+  const supabase = await createSupabaseServerClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  const { data: banned } = await supabase.rpc('is_banned_word', {
+    input: trimmed,
+  })
+  if (banned) {
+    return { success: false, error: 'Nickname contains inappropriate language' }
+  }
+
+  const { error } = await supabase
+    .from('users')
+    .update({ username: trimmed })
+    .eq('id', user.id)
+
+  if (error) {
+    if (error.code === '23505') {
+      return { success: false, error: 'Nickname already taken' }
+    }
+    console.error('Nickname update failed:', error)
+    return { success: false, error: 'Update failed' }
+  }
+
+  return { success: true }
+}
+
+export async function checkNicknameAvailable(
+  nickname: string,
+): Promise<{ available: boolean; reason?: 'taken' | 'banned' }> {
+  const trimmed = nickname.trim()
+  if (trimmed.length === 0) return { available: false }
+
+  const supabase = await createSupabaseServerClient()
+
+  const { data: banned } = await supabase.rpc('is_banned_word', {
+    input: trimmed,
+  })
+  if (banned) return { available: false, reason: 'banned' }
+
+  const { data } = await supabase
+    .from('users')
+    .select('id')
+    .eq('username', trimmed)
+    .maybeSingle()
+
+  return { available: !data, reason: data ? 'taken' : undefined }
 }
 
 export async function signOut(): Promise<void> {

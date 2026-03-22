@@ -10,21 +10,17 @@ interface Props {
 export default async function ResultPage({ params }: Props) {
   const { matchId } = await params
 
-  // userId is validated by layout
   const userId = (await getServerUserId())!
 
-  // Get data
   const [player, match] = await Promise.all([
     getPlayerByUserId(matchId, userId),
     getMatch(matchId),
   ])
 
-  // Validate player and match exist
   if (!player || !match || match.status === 'abandoned') {
     redirect('/')
   }
 
-  // If status doesn't match, let index router handle it
   if (match.status !== 'finished') {
     redirect(`/game/${matchId}`)
   }
@@ -33,6 +29,7 @@ export default async function ResultPage({ params }: Props) {
 
   return (
     <MatchFinished
+      mode={match.mode}
       myPlayer={player!}
       opponent={opponent}
       myScore={player!.score}

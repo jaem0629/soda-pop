@@ -19,7 +19,7 @@ yarn.lock
 next-env.d.ts
 *.tsbuildinfo
 supabase/database.ts
-src/components/ui
+supabase/migration
 
 # misc
 .vercel

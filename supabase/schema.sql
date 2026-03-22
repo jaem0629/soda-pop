@@ -7,12 +7,10 @@
 -- Game Mode Definitions
 -- ================================================
 -- 
--- | Mode    | Players | Entry Type             |
--- |---------|---------|------------------------|
--- | solo    | 1       | instant start          |
--- | battle  | 2       | private / matchmaking  |
--- | coop    | 4       | private / matchmaking  |
--- | custom  | 2~8     | private only           |
+-- | Mode    | Players | Entry Type        |
+-- |---------|---------|-------------------|
+-- | solo    | 1       | private (instant) |
+-- | battle  | 2       | private / public  |
 --
 -- ================================================
 
@@ -24,7 +22,7 @@
 -- TODO: Supabase Auth 설정 후 활성화
 CREATE TABLE IF NOT EXISTS public.users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  username VARCHAR(20) NOT NULL,
+  username VARCHAR(20) NOT NULL UNIQUE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -38,7 +36,7 @@ CREATE INDEX IF NOT EXISTS idx_users_username ON public.users(username);
 -- Game mode enum
 DO $$
 BEGIN
-  CREATE TYPE game_mode AS ENUM ('solo', 'battle', 'coop', 'custom');
+  CREATE TYPE game_mode AS ENUM ('solo', 'battle');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
@@ -46,7 +44,7 @@ END $$;
 -- Entry type enum
 DO $$
 BEGIN
-  CREATE TYPE entry_type AS ENUM ('private', 'matchmaking');
+  CREATE TYPE entry_type AS ENUM ('private', 'public');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
@@ -65,11 +63,11 @@ CREATE TABLE IF NOT EXISTS public.matches (
   -- Game settings
   mode game_mode NOT NULL,
   entry_type entry_type NOT NULL,
-  code VARCHAR(6) UNIQUE,  -- private only, NULL for matchmaking
+  code VARCHAR(6) UNIQUE,  -- private only, NULL for public/solo
   
   -- Player settings
   max_players INT NOT NULL DEFAULT 2,
-  team_size INT,  -- coop: 2, others: NULL
+  team_size INT,  -- unused, kept for compatibility
   
   -- Status
   status match_status NOT NULL DEFAULT 'waiting',
@@ -99,7 +97,7 @@ CREATE TABLE IF NOT EXISTS public.match_players (
   
   -- In-game info
   player_order INT NOT NULL,  -- Join order (1, 2, 3...)
-  team_number INT,  -- coop: 1 or 2, others: NULL
+  team_number INT,  -- unused, kept for compatibility
   score INT NOT NULL DEFAULT 0,
   
   -- Role
@@ -135,8 +133,8 @@ CREATE TABLE IF NOT EXISTS public.matchmaking_queue (
   player_name VARCHAR(20) NOT NULL,  -- For anonymous users
   
   -- Matchmaking settings
-  mode game_mode NOT NULL,  -- battle or coop
-  team_id UUID,  -- coop private: team identifier (same team_id forms a team)
+  mode game_mode NOT NULL,
+  team_id UUID,
   
   -- Status
   status queue_status DEFAULT 'waiting',
@@ -162,13 +160,13 @@ CREATE TABLE IF NOT EXISTS public.rankings (
   mode game_mode NOT NULL,
   match_id UUID REFERENCES public.matches(id) ON DELETE SET NULL,
   
-  -- Player info (multiple for coop)
+  -- Player info
   user_ids UUID[] NOT NULL,
   player_names VARCHAR(20)[] NOT NULL,  -- For display
   
   -- Results
   score INT NOT NULL,
-  is_winner BOOLEAN DEFAULT FALSE,  -- Winner in battle/coop
+  is_winner BOOLEAN DEFAULT FALSE,  -- Winner in battle
   
   -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -222,9 +220,10 @@ CREATE POLICY "queue_insert" ON public.matchmaking_queue FOR INSERT WITH CHECK (
 CREATE POLICY "queue_update" ON public.matchmaking_queue FOR UPDATE USING (true);
 CREATE POLICY "queue_delete" ON public.matchmaking_queue FOR DELETE USING (true);
 
--- rankings: Read-only, insert only from server (service_role)
+-- rankings: Read for all, insert/update for own scores
 CREATE POLICY "rankings_select" ON public.rankings FOR SELECT USING (true);
-CREATE POLICY "rankings_insert" ON public.rankings FOR INSERT WITH CHECK (auth.role() = 'service_role');
+CREATE POLICY "rankings_insert" ON public.rankings FOR INSERT WITH CHECK (auth.uid() = ANY(user_ids));
+CREATE POLICY "rankings_update" ON public.rankings FOR UPDATE USING (auth.uid() = ANY(user_ids));
 
 -- ================================================
 -- 7. Functions
@@ -262,6 +261,65 @@ $$;
 
 -- TODO: Matchmaking function (recommended to implement as Edge Function)
 -- CREATE OR REPLACE FUNCTION process_matchmaking()
+
+-- ================================================
+-- 9. Banned Words
+-- ================================================
+
+CREATE TABLE IF NOT EXISTS public.banned_words (
+  id SERIAL PRIMARY KEY,
+  word TEXT NOT NULL UNIQUE
+);
+
+ALTER TABLE public.banned_words ENABLE ROW LEVEL SECURITY;
+
+-- No direct access for any user — managed via service role only
+CREATE POLICY "banned_words_no_access" ON public.banned_words USING (false);
+
+-- Check function: bypasses RLS via SECURITY DEFINER
+CREATE OR REPLACE FUNCTION is_banned_word(input TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.banned_words
+    WHERE lower(input) LIKE '%' || lower(word) || '%'
+  );
+$$;
+
+-- Sync player_names in rankings when a user changes their username
+CREATE OR REPLACE FUNCTION sync_rankings_player_names()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF NEW.username = OLD.username THEN
+    RETURN NEW;
+  END IF;
+
+  UPDATE public.rankings
+  SET player_names = (
+    SELECT array_agg(
+      CASE
+        WHEN user_ids[idx] = NEW.id THEN NEW.username
+        ELSE player_names[idx]
+      END
+      ORDER BY idx
+    )
+    FROM generate_subscripts(user_ids, 1) AS idx
+  )
+  WHERE NEW.id = ANY(user_ids);
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER on_username_change
+  AFTER UPDATE OF username ON public.users
+  FOR EACH ROW
+  EXECUTE FUNCTION sync_rankings_player_names();
 
 -- ================================================
 -- 8. Enable Realtime

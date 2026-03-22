@@ -12,21 +12,17 @@ interface Props {
 export default async function PlayPage({ params }: Props) {
   const { matchId } = await params
 
-  // userId is validated by layout
   const userId = (await getServerUserId())!
 
-  // Get data
   const [player, match] = await Promise.all([
     getPlayerByUserId(matchId, userId),
     getMatch(matchId),
   ])
 
-  // Validate player and match exist
   if (!player || !match || match.status === 'abandoned') {
     redirect('/')
   }
 
-  // If status doesn't match, let index router handle it
   if (match.status !== 'playing') {
     redirect(`/game/${matchId}`)
   }
@@ -41,6 +37,7 @@ export default async function PlayPage({ params }: Props) {
     <PlayMatch
       matchId={matchId}
       userId={userId}
+      mode={match.mode}
       initialMatch={match}
       initialPlayer={player!}
       initialOpponent={opponent}

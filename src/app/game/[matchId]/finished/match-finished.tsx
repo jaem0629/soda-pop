@@ -1,40 +1,39 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { HomeIcon, StarIcon, TrophyIcon } from 'lucide-react'
+import { HomeIcon, TrophyIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import type { MatchPlayer } from '../_lib/types'
+import type { GameMode, MatchPlayer } from '../_lib/types'
 
 interface MatchFinishedProps {
+  mode: GameMode
   myPlayer: MatchPlayer
   opponent: MatchPlayer | undefined
   myScore: number
   opponentScore: number
 }
 
-const RESULT_STYLES = {
+const BATTLE_RESULT_STYLES = {
   win: {
     text: 'VICTORY',
     className:
       'bg-linear-to-r from-amber-400 to-yellow-300 bg-clip-text text-transparent',
     subtitle: 'Great job!',
-    stars: 3,
   },
   lose: {
     text: 'DEFEAT',
     className: 'text-red-400',
     subtitle: 'Better luck next time!',
-    stars: 1,
   },
   draw: {
     text: 'DRAW',
     className: 'text-purple-400',
     subtitle: "It's a tie!",
-    stars: 2,
   },
 } as const
 
 export default function MatchFinished({
+  mode,
   myPlayer,
   opponent,
   myScore,
@@ -42,10 +41,92 @@ export default function MatchFinished({
 }: MatchFinishedProps) {
   const router = useRouter()
 
+  if (mode === 'solo') {
+    return (
+      <SoloFinished
+        myPlayer={myPlayer}
+        myScore={myScore}
+        onBackToLobby={() => router.push('/lobby')}
+      />
+    )
+  }
+
+  return (
+    <BattleFinished
+      myPlayer={myPlayer}
+      opponent={opponent}
+      myScore={myScore}
+      opponentScore={opponentScore}
+      onBackToLobby={() => router.push('/lobby')}
+    />
+  )
+}
+
+function SoloFinished({
+  myPlayer,
+  myScore,
+  onBackToLobby,
+}: {
+  myPlayer: MatchPlayer
+  myScore: number
+  onBackToLobby: () => void
+}) {
+  return (
+    <div className='flex flex-1 items-center justify-center p-4'>
+      <div className='flex w-full max-w-lg flex-col items-center'>
+        <h1 className='mb-1 bg-linear-to-r from-green-400 to-emerald-300 bg-clip-text text-5xl font-black tracking-tight text-transparent'>
+          GAME OVER
+        </h1>
+        <p className='mb-8 text-white/50'>Nice playing!</p>
+
+        <div className='mb-8 w-full rounded-2xl py-4'>
+          <div className='mb-4 flex items-center justify-center gap-2 text-sm'>
+            <TrophyIcon className='size-4 text-white/40' />
+            <span className='font-medium text-white/40'>Your Score</span>
+          </div>
+
+          <div className='flex items-center gap-4 rounded-2xl bg-white/10 p-4'>
+            <div className='flex size-10 items-center justify-center rounded-full bg-linear-to-br from-green-500 to-emerald-500 text-xs font-bold'>
+              {myPlayer.player_name.charAt(0).toUpperCase()}
+            </div>
+            <div className='min-w-0 flex-1'>
+              <p className='truncate font-semibold'>{myPlayer.player_name}</p>
+            </div>
+            <span className='text-2xl font-black tabular-nums'>
+              {myScore.toLocaleString()}
+            </span>
+          </div>
+        </div>
+
+        <button
+          onClick={onBackToLobby}
+          className='flex h-14 w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-blue-500 to-purple-500 text-lg font-bold transition-opacity hover:opacity-90'
+        >
+          <HomeIcon className='size-5' />
+          Back to Lobby
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function BattleFinished({
+  myPlayer,
+  opponent,
+  myScore,
+  opponentScore,
+  onBackToLobby,
+}: {
+  myPlayer: MatchPlayer
+  opponent: MatchPlayer | undefined
+  myScore: number
+  opponentScore: number
+  onBackToLobby: () => void
+}) {
   const isWinner = myScore > opponentScore
   const isDraw = myScore === opponentScore
   const result = isDraw ? 'draw' : isWinner ? 'win' : 'lose'
-  const config = RESULT_STYLES[result]
+  const config = BATTLE_RESULT_STYLES[result]
 
   const players = [
     { name: myPlayer.player_name, score: myScore, isMe: true },
@@ -59,22 +140,6 @@ export default function MatchFinished({
   return (
     <div className='flex flex-1 items-center justify-center p-4'>
       <div className='flex w-full max-w-lg flex-col items-center'>
-        {/* Stars */}
-        <div className='mb-4 flex gap-3'>
-          {[1, 2, 3].map((i) => (
-            <StarIcon
-              key={i}
-              className={cn(
-                'size-10',
-                i <= config.stars
-                  ? 'fill-amber-400 text-amber-400 drop-shadow-lg'
-                  : 'text-white/10',
-              )}
-            />
-          ))}
-        </div>
-
-        {/* Result Text */}
         <h1
           className={cn(
             'mb-1 text-5xl font-black tracking-tight',
@@ -85,7 +150,6 @@ export default function MatchFinished({
         </h1>
         <p className='mb-8 text-white/50'>{config.subtitle}</p>
 
-        {/* Score Summary */}
         <div className='mb-8 w-full rounded-2xl py-4'>
           <div className='mb-4 flex items-center justify-center gap-2 text-sm'>
             <TrophyIcon className='size-4 text-white/40' />
@@ -105,9 +169,8 @@ export default function MatchFinished({
           </div>
         </div>
 
-        {/* Actions */}
         <button
-          onClick={() => router.push('/lobby')}
+          onClick={onBackToLobby}
           className='flex h-14 w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-blue-500 to-purple-500 text-lg font-bold transition-opacity hover:opacity-90'
         >
           <HomeIcon className='size-5' />

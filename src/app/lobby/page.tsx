@@ -1,9 +1,13 @@
-import { getMatchRoute } from '@/app/_lib/routing'
 import { getAuthUser } from '@/app/_lib/queries'
+import { getMatchRoute } from '@/app/_lib/routing'
 import { redirect } from 'next/navigation'
-import { getActiveMatch, getUserProfile, getWaitingRooms } from './_lib/queries'
+import {
+  getActiveMatch,
+  getLeaderboard,
+  getUserProfile,
+  getWaitingMatches,
+} from './_lib/queries'
 import { Lobby } from './lobby'
-
 export default async function LobbyPage() {
   const user = await getAuthUser()
 
@@ -11,11 +15,14 @@ export default async function LobbyPage() {
     redirect('/')
   }
 
-  const [activeMatch, profile, rooms] = await Promise.all([
-    getActiveMatch(user.id),
-    getUserProfile(user.id),
-    getWaitingRooms(),
-  ])
+  const [activeMatch, profile, matches, soloLeaderboard, battleLeaderboard] =
+    await Promise.all([
+      getActiveMatch(user.id),
+      getUserProfile(user.id),
+      getWaitingMatches(),
+      getLeaderboard('solo'),
+      getLeaderboard('battle'),
+    ])
 
   if (activeMatch) {
     redirect(getMatchRoute(activeMatch.id, activeMatch.status))
@@ -23,5 +30,12 @@ export default async function LobbyPage() {
 
   const nickname = profile?.username ?? 'Unknown'
 
-  return <Lobby nickname={nickname} rooms={rooms} />
+  return (
+    <Lobby
+      nickname={nickname}
+      matches={matches}
+      soloLeaderboard={soloLeaderboard}
+      battleLeaderboard={battleLeaderboard}
+    />
+  )
 }

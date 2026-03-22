@@ -66,61 +66,57 @@ export type LeaderboardEntry = {
   created_at: string | null
 }
 
-/** Get top 10 battle scores */
-export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+/** Get top 10 scores for a given mode */
+export async function getLeaderboard(
+  mode: 'solo' | 'battle',
+): Promise<LeaderboardEntry[]> {
   const supabase = await createSupabaseServerClient()
 
   const { data } = await supabase
     .from('rankings')
     .select('player_names, score, user_ids, created_at')
-    .eq('mode', 'battle')
+    .eq('mode', mode)
     .order('score', { ascending: false })
     .limit(10)
 
   return data ?? []
 }
 
-export type WaitingRoom = {
+export type WaitingMatch = {
   id: string
-  code: string
-  mode: string
+  entry_type: string
   max_players: number
   created_at: string | null
   host_name: string
   player_count: number
 }
 
-/** Get matches currently waiting for players */
-export async function getWaitingRooms(): Promise<WaitingRoom[]> {
+/** Get battle matches currently waiting for players */
+export async function getWaitingMatches(): Promise<WaitingMatch[]> {
   const supabase = await createSupabaseServerClient()
 
   const { data } = await supabase
     .from('matches')
     .select(
-      'id, code, mode, max_players, created_at, match_players(player_name, is_host)',
+      'id, entry_type, max_players, created_at, match_players(player_name, is_host)',
     )
     .eq('status', 'waiting')
-    .not('code', 'is', null)
+    .eq('mode', 'battle')
     .order('created_at', { ascending: false })
     .limit(10)
 
   if (!data) return []
 
-  return data
-    .filter(
-      (match): match is typeof match & { code: string } => match.code !== null,
-    )
-    .map((match) => {
-      const players = match.match_players ?? []
-      const host = players.find((p) => p.is_host)
-      return {
-        id: match.id,
-        code: match.code,
-        mode: match.mode,
-        max_players: match.max_players,
-        created_at: match.created_at,
-        host_name: host?.player_name ?? 'Unknown',
-        player_count: players.length,
-      }
-    })
+  return data.map((match) => {
+    const players = match.match_players ?? []
+    const host = players.find((p) => p.is_host)
+    return {
+      id: match.id,
+      entry_type: match.entry_type,
+      max_players: match.max_players,
+      created_at: match.created_at,
+      host_name: host?.player_name ?? 'Unknown',
+      player_count: players.length,
+    }
+  })
 }

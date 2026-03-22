@@ -220,10 +220,11 @@ export type Database = {
     }
     Functions: {
       cleanup_old_matches: { Args: never; Returns: undefined }
+      is_banned_word: { Args: { input: string }; Returns: boolean }
     }
     Enums: {
-      entry_type: "private" | "matchmaking"
-      game_mode: "solo" | "battle" | "coop" | "custom"
+      entry_type: "private" | "public"
+      game_mode: "solo" | "battle"
       match_status:
         | "waiting"
         | "matching"
@@ -358,8 +359,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      entry_type: ["private", "matchmaking"],
-      game_mode: ["solo", "battle", "coop", "custom"],
+      entry_type: ["private", "public"],
+      game_mode: ["solo", "battle"],
       match_status: ["waiting", "matching", "playing", "finished", "abandoned"],
       queue_status: ["waiting", "matched", "cancelled"],
     },
