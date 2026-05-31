@@ -338,7 +338,7 @@ export default function GameBoard({
         ref={canvasRef}
         width={BOARD_PX}
         height={BOARD_PX}
-        className='cursor-pointer touch-none rounded-2xl shadow-2xl shadow-purple-500/20 select-none'
+        className='cursor-pointer touch-none rounded-lg shadow-2xl shadow-purple-500/20 select-none'
         style={{
           maxWidth: '100%',
           maxHeight: '100%',

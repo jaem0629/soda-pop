@@ -6,11 +6,20 @@ import { getActiveMatch } from './queries'
 
 type GameMode = 'solo' | 'battle'
 type EntryType = 'private' | 'public'
+type SupabaseClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
+type JoinableMatch = {
+  id: string
+  entry_type: EntryType
+  status: 'waiting' | 'matching' | 'playing' | 'finished' | 'abandoned'
+  max_players: number
+}
+type JoinMatchResult = { success: boolean; matchId?: string; error?: string }
 
 const MODE_MAX_PLAYERS: Record<GameMode, number> = {
   solo: 1,
   battle: 2,
 }
+const QUICK_BATTLE_LIMIT = 5
 
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -18,11 +27,88 @@ function generateCode(): string {
   return Array.from(randomValues, (v) => chars[v % chars.length]).join('')
 }
 
+async function joinExistingMatch(
+  supabase: SupabaseClient,
+  params: {
+    match: JoinableMatch
+    userId: string
+    playerName: string
+    shouldRequirePublic?: boolean
+  },
+): Promise<JoinMatchResult> {
+  if (params.shouldRequirePublic && params.match.entry_type !== 'public') {
+    return { success: false, error: 'This match requires a code to join' }
+  }
+
+  if (
+    params.match.status === 'finished' ||
+    params.match.status === 'abandoned'
+  ) {
+    return { success: false, error: 'Game already ended' }
+  }
+
+  if (params.match.status === 'playing') {
+    return { success: false, error: 'Game already in progress' }
+  }
+
+  const { data: existingPlayers, error: playersError } = await supabase
+    .from('match_players')
+    .select('user_id, player_order')
+    .eq('match_id', params.match.id)
+    .order('player_order', { ascending: true })
+
+  if (playersError) {
+    return { success: false, error: 'Error occurred' }
+  }
+
+  const players = existingPlayers ?? []
+
+  const existingPlayer = players.find(
+    (player) => player.user_id === params.userId,
+  )
+  if (existingPlayer) {
+    return { success: true, matchId: params.match.id }
+  }
+
+  if (players.length >= params.match.max_players) {
+    return { success: false, error: 'Match is full' }
+  }
+
+  const usedOrders = new Set(players.map((player) => player.player_order))
+  const nextOrder = Array.from(
+    { length: params.match.max_players },
+    (_, index) => index + 1,
+  ).find((order) => !usedOrders.has(order))
+
+  if (!nextOrder) {
+    return { success: false, error: 'Match is full' }
+  }
+
+  const { error: insertError } = await supabase.from('match_players').insert({
+    match_id: params.match.id,
+    user_id: params.userId,
+    player_name: params.playerName,
+    player_order: nextOrder,
+    is_host: false,
+  })
+
+  if (insertError) {
+    if (insertError.code === '23505') {
+      return { success: false, error: 'Match is full' }
+    }
+
+    console.error('Player addition failed:', insertError)
+    return { success: false, error: 'Failed to join match' }
+  }
+
+  return { success: true, matchId: params.match.id }
+}
+
 export async function createMatch(
   playerName: string,
   mode: GameMode = 'battle',
   entryType: EntryType = 'private',
-): Promise<{ success: boolean; matchId?: string; error?: string }> {
+): Promise<JoinMatchResult> {
   const user = await getAuthUser()
 
   if (!user) {
@@ -78,10 +164,51 @@ export async function createMatch(
   return { success: true, matchId: match.id }
 }
 
+export async function joinQuickBattle(
+  playerName: string,
+): Promise<JoinMatchResult> {
+  const user = await getAuthUser()
+
+  if (!user) {
+    return { success: false, error: 'Authentication required' }
+  }
+
+  const activeMatch = await getActiveMatch(user.id)
+  if (activeMatch) {
+    return { success: false, error: 'Already in a game' }
+  }
+
+  const supabase = await createSupabaseServerClient()
+  const { data: matches, error } = await supabase
+    .from('matches')
+    .select('id, max_players, match_players(user_id)')
+    .eq('mode', 'battle')
+    .eq('entry_type', 'public')
+    .eq('status', 'waiting')
+    .order('created_at', { ascending: true })
+    .limit(QUICK_BATTLE_LIMIT)
+
+  if (error) {
+    console.error('Quick battle lookup failed:', error)
+    return { success: false, error: 'Failed to find battle' }
+  }
+
+  const match = matches?.find(
+    (candidate) =>
+      (candidate.match_players?.length ?? 0) < candidate.max_players,
+  )
+
+  if (match) {
+    return await joinMatchById(match.id, playerName)
+  }
+
+  return await createMatch(playerName, 'battle', 'public')
+}
+
 export async function joinMatch(
   code: string,
   playerName: string,
-): Promise<{ success: boolean; matchId?: string; error?: string }> {
+): Promise<JoinMatchResult> {
   const user = await getAuthUser()
 
   if (!user) {
@@ -97,7 +224,7 @@ export async function joinMatch(
 
   const { data: match, error: matchError } = await supabase
     .from('matches')
-    .select()
+    .select('id, entry_type, status, max_players')
     .eq('code', code.toUpperCase())
     .single()
 
@@ -105,56 +232,17 @@ export async function joinMatch(
     return { success: false, error: 'Match not found' }
   }
 
-  if (match.status === 'finished' || match.status === 'abandoned') {
-    return { success: false, error: 'Game already ended' }
-  }
-
-  const { data: existingPlayers, error: playersError } = await supabase
-    .from('match_players')
-    .select()
-    .eq('match_id', match.id)
-    .order('player_order', { ascending: true })
-
-  if (playersError) {
-    return { success: false, error: 'Error occurred' }
-  }
-
-  const players = existingPlayers ?? []
-
-  const existingPlayer = players.find((p) => p.user_id === user.id)
-  if (existingPlayer) {
-    return { success: true, matchId: match.id }
-  }
-
-  if (match.status === 'playing') {
-    return { success: false, error: 'Game already in progress' }
-  }
-
-  if (players.length >= match.max_players) {
-    return { success: false, error: 'Match is full' }
-  }
-
-  const nextOrder = players.length + 1
-  const { error: insertError } = await supabase.from('match_players').insert({
-    match_id: match.id,
-    user_id: user.id,
-    player_name: playerName,
-    player_order: nextOrder,
-    is_host: false,
+  return await joinExistingMatch(supabase, {
+    match,
+    userId: user.id,
+    playerName,
   })
-
-  if (insertError) {
-    console.error('Player addition failed:', insertError)
-    return { success: false, error: 'Failed to join match' }
-  }
-
-  return { success: true, matchId: match.id }
 }
 
 export async function joinMatchById(
   matchId: string,
   playerName: string,
-): Promise<{ success: boolean; matchId?: string; error?: string }> {
+): Promise<JoinMatchResult> {
   const user = await getAuthUser()
 
   if (!user) {
@@ -170,7 +258,7 @@ export async function joinMatchById(
 
   const { data: match, error: matchError } = await supabase
     .from('matches')
-    .select()
+    .select('id, entry_type, status, max_players')
     .eq('id', matchId)
     .single()
 
@@ -178,54 +266,12 @@ export async function joinMatchById(
     return { success: false, error: 'Match not found' }
   }
 
-  if (match.entry_type !== 'public') {
-    return { success: false, error: 'This match requires a code to join' }
-  }
-
-  if (match.status === 'finished' || match.status === 'abandoned') {
-    return { success: false, error: 'Game already ended' }
-  }
-
-  const { data: existingPlayers, error: playersError } = await supabase
-    .from('match_players')
-    .select()
-    .eq('match_id', match.id)
-    .order('player_order', { ascending: true })
-
-  if (playersError) {
-    return { success: false, error: 'Error occurred' }
-  }
-
-  const players = existingPlayers ?? []
-
-  const existingPlayer = players.find((p) => p.user_id === user.id)
-  if (existingPlayer) {
-    return { success: true, matchId: match.id }
-  }
-
-  if (match.status === 'playing') {
-    return { success: false, error: 'Game already in progress' }
-  }
-
-  if (players.length >= match.max_players) {
-    return { success: false, error: 'Match is full' }
-  }
-
-  const nextOrder = players.length + 1
-  const { error: insertError } = await supabase.from('match_players').insert({
-    match_id: match.id,
-    user_id: user.id,
-    player_name: playerName,
-    player_order: nextOrder,
-    is_host: false,
+  return await joinExistingMatch(supabase, {
+    match,
+    userId: user.id,
+    playerName,
+    shouldRequirePublic: true,
   })
-
-  if (insertError) {
-    console.error('Player addition failed:', insertError)
-    return { success: false, error: 'Failed to join match' }
-  }
-
-  return { success: true, matchId: match.id }
 }
 
 export async function getAuthUserId(): Promise<string | null> {

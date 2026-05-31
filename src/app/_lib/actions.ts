@@ -1,14 +1,19 @@
 'use server'
 
+import { USERNAME_MAX_LENGTH } from '@/lib/supabase/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+
+const GOOGLE_PROVIDER = 'google'
+const AUTH_CALLBACK_PATH = '/auth/callback'
 
 export async function signInAsGuest(
   nickname: string,
   captchaToken: string,
 ): Promise<{ success: boolean; error?: string }> {
   const trimmed = nickname.trim()
-  if (trimmed.length === 0 || trimmed.length > 20) {
+  if (trimmed.length === 0 || trimmed.length > USERNAME_MAX_LENGTH) {
     return { success: false, error: 'Nickname must be 1-20 characters' }
   }
 
@@ -59,11 +64,38 @@ export async function signInAsGuest(
   return { success: true }
 }
 
+export async function signInWithGoogle(): Promise<{
+  success: boolean
+  url?: string
+  error?: string
+}> {
+  const supabase = await createSupabaseServerClient()
+  const requestHeaders = await headers()
+  const origin =
+    requestHeaders.get('origin') ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    'http://localhost:3000'
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: GOOGLE_PROVIDER,
+    options: {
+      redirectTo: `${origin}${AUTH_CALLBACK_PATH}`,
+    },
+  })
+
+  if (error || !data.url) {
+    console.error('Google sign-in failed:', error)
+    return { success: false, error: 'Google sign-in failed' }
+  }
+
+  return { success: true, url: data.url }
+}
+
 export async function updateNickname(
   newNickname: string,
 ): Promise<{ success: boolean; error?: string }> {
   const trimmed = newNickname.trim()
-  if (trimmed.length === 0 || trimmed.length > 20) {
+  if (trimmed.length === 0 || trimmed.length > USERNAME_MAX_LENGTH) {
     return { success: false, error: 'Nickname must be 1-20 characters' }
   }
 

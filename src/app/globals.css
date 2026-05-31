@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 :root {
-  --background: oklch(0.141 0.005 285.823);
+  --background: oklch(0.13 0.02 245);
   --foreground: oklch(0.985 0 0);
 }
 
@@ -16,5 +16,10 @@
   }
   body {
     @apply bg-background text-foreground;
+    background:
+      linear-gradient(135deg, rgb(15 23 42), rgb(20 20 28) 45%, rgb(39 18 24)),
+      var(--background);
+    overscroll-behavior: none;
+    touch-action: manipulation;
   }
 }

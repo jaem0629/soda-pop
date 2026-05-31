@@ -61,6 +61,7 @@ function MatchWaitingContent({
 
   const isHost = myPlayer.is_host
   const canStart = isHost && match.players.length >= match.max_players
+  const isPrivate = match.entry_type === 'private'
 
   const reloadMatch = async () => {
     const data = await getMatchClient(matchId)
@@ -130,30 +131,36 @@ function MatchWaitingContent({
   }
 
   return (
-    <div className='mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-10'>
-      {/* Match Code */}
+    <div className='mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-6 px-2 py-4 sm:gap-8'>
       <div className='flex w-full flex-col items-center gap-2'>
         <p className='text-xs font-semibold tracking-widest text-white/40 uppercase'>
-          Match Code
+          {isPrivate ? 'Match Code' : 'Quick Battle'}
         </p>
-        <button
-          onClick={copyCode}
-          className='group flex w-full items-center justify-center gap-4 rounded-2xl px-8 py-4'
-        >
-          <span className='text-4xl font-black tracking-widest text-blue-400'>
-            {match.code ?? '----'}
-          </span>
-          <span className='text-white/30 transition-colors group-hover:text-white/60'>
-            {copied ? (
-              <CheckIcon className='size-5' />
-            ) : (
-              <CopyIcon className='size-5' />
-            )}
-          </span>
-        </button>
+        {isPrivate ? (
+          <button
+            onClick={copyCode}
+            className='group flex w-full items-center justify-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-4'
+          >
+            <span className='text-3xl font-black tracking-widest text-sky-300 sm:text-4xl'>
+              {match.code ?? '----'}
+            </span>
+            <span className='text-white/30 transition-colors group-hover:text-white/60'>
+              {copied ? (
+                <CheckIcon className='size-5' />
+              ) : (
+                <CopyIcon className='size-5' />
+              )}
+            </span>
+          </button>
+        ) : (
+          <div className='w-full rounded-lg border border-white/10 bg-white/5 px-4 py-4 text-center'>
+            <span className='text-2xl font-black text-sky-300'>
+              Finding Rival
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Players */}
       <div className='w-full'>
         <p className='mb-4 text-center text-xs font-semibold tracking-widest text-white/40 uppercase'>
           Players {match.players.length}/{match.max_players}
@@ -184,11 +191,10 @@ function MatchWaitingContent({
         </div>
       </div>
 
-      {/* Actions */}
-      <div className='flex w-full gap-8'>
+      <div className='flex w-full flex-col gap-3 sm:flex-row'>
         <button
           onClick={handleLeaveMatch}
-          className='w-full rounded-2xl bg-white/10 py-3 text-sm font-semibold transition-colors hover:bg-white/20'
+          className='h-12 w-full rounded-lg bg-white/10 px-4 text-sm font-semibold transition-colors hover:bg-white/20'
         >
           Leave Match
         </button>
@@ -196,7 +202,7 @@ function MatchWaitingContent({
         <button
           onClick={handleStartGame}
           disabled={!canStart}
-          className='flex h-14 w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-blue-500 to-purple-500 text-lg font-bold transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-50'
+          className='flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-white text-base font-black text-slate-950 transition hover:bg-sky-100 disabled:cursor-default disabled:opacity-50'
         >
           <PlayIcon className='size-5' />
           Start Game
@@ -214,7 +220,7 @@ function PlayerSlot({ name, isHost }: { name?: string; isHost?: boolean }) {
   return (
     <div
       className={cn(
-        'flex items-center gap-4 rounded-2xl p-4',
+        'flex items-center gap-4 rounded-lg p-4',
         isEmpty ? 'border border-dashed border-white/10' : 'bg-white/5',
       )}
     >

@@ -1,10 +1,46 @@
 'use server'
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { GAME_DURATION } from './game-logic'
 import type { Match } from './types'
+
+const EARLY_FINISH_GRACE_SECONDS = 1
+
+async function getAuthenticatedUserId(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+): Promise<string | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  return user?.id ?? null
+}
 
 export async function startMatch(matchId: string): Promise<Match | null> {
   const supabase = await createSupabaseServerClient()
+  const userId = await getAuthenticatedUserId(supabase)
+
+  if (!userId) return null
+
+  const { data: match, error: matchError } = await supabase
+    .from('matches')
+    .select('*, match_players(user_id, is_host)')
+    .eq('id', matchId)
+    .eq('status', 'waiting')
+    .single()
+
+  if (matchError || !match) {
+    console.error('Failed to fetch startable match:', matchError)
+    return null
+  }
+
+  const players = match.match_players ?? []
+  const isHost = players.some(
+    (player) => player.user_id === userId && player.is_host,
+  )
+  if (!isHost || players.length < match.max_players) {
+    return null
+  }
 
   const { data, error } = await supabase
     .from('matches')
@@ -31,14 +67,20 @@ export async function updatePlayerScore(
   score: number,
 ): Promise<boolean> {
   const supabase = await createSupabaseServerClient()
+  const userId = await getAuthenticatedUserId(supabase)
 
-  const { error } = await supabase
+  if (!userId || score < 0) return false
+
+  const { data, error } = await supabase
     .from('match_players')
     .update({ score })
     .eq('match_id', matchId)
     .eq('player_order', playerOrder)
+    .eq('user_id', userId)
+    .select('id')
+    .maybeSingle()
 
-  if (error) {
+  if (error || !data) {
     console.error('Failed to update score:', error)
     return false
   }
@@ -48,8 +90,29 @@ export async function updatePlayerScore(
 
 export async function finishMatch(matchId: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient()
+  const userId = await getAuthenticatedUserId(supabase)
 
-  const { error } = await supabase
+  if (!userId) return false
+
+  const { data: match, error: matchError } = await supabase
+    .from('matches')
+    .select('started_at, status, match_players!inner(user_id)')
+    .eq('id', matchId)
+    .eq('match_players.user_id', userId)
+    .single()
+
+  if (matchError || !match || match.status !== 'playing' || !match.started_at) {
+    console.error('Failed to fetch finishable match:', matchError)
+    return false
+  }
+
+  const elapsedSeconds =
+    (Date.now() - new Date(match.started_at).getTime()) / 1000
+  if (elapsedSeconds + EARLY_FINISH_GRACE_SECONDS < GAME_DURATION) {
+    return false
+  }
+
+  const { data: finishedMatch, error } = await supabase
     .from('matches')
     .update({
       status: 'finished',
@@ -57,8 +120,10 @@ export async function finishMatch(matchId: string): Promise<boolean> {
     })
     .eq('id', matchId)
     .eq('status', 'playing')
+    .select('id')
+    .maybeSingle()
 
-  if (error) {
+  if (error || !finishedMatch) {
     console.error('Failed to finish game:', error)
     return false
   }

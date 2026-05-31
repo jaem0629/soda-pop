@@ -83,6 +83,39 @@ CREATE INDEX IF NOT EXISTS idx_matches_code ON public.matches(code) WHERE code I
 CREATE INDEX IF NOT EXISTS idx_matches_status ON public.matches(status) WHERE status IN ('waiting', 'playing');
 CREATE INDEX IF NOT EXISTS idx_matches_mode_status ON public.matches(mode, status) WHERE status IN ('waiting', 'playing');
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'matches_mode_players_check'
+      AND conrelid = 'public.matches'::regclass
+  ) THEN
+    ALTER TABLE public.matches
+      ADD CONSTRAINT matches_mode_players_check
+      CHECK (
+        (mode = 'solo' AND entry_type = 'private' AND max_players = 1)
+        OR (mode = 'battle' AND entry_type IN ('private', 'public') AND max_players = 2)
+      );
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'matches_code_scope_check'
+      AND conrelid = 'public.matches'::regclass
+  ) THEN
+    ALTER TABLE public.matches
+      ADD CONSTRAINT matches_code_scope_check
+      CHECK (
+        (mode = 'battle' AND entry_type = 'private' AND code IS NOT NULL)
+        OR (mode = 'battle' AND entry_type = 'public' AND code IS NULL)
+        OR (mode = 'solo' AND code IS NULL)
+      );
+  END IF;
+END $$;
+
 -- ================================================
 -- 3. MATCH_PLAYERS Table (N:M relationship)
 -- ================================================
@@ -112,6 +145,38 @@ CREATE TABLE IF NOT EXISTS public.match_players (
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_match_players_match ON public.match_players(match_id);
 CREATE INDEX IF NOT EXISTS idx_match_players_user ON public.match_players(user_id) WHERE user_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_match_players_unique_user
+  ON public.match_players(match_id, user_id)
+  WHERE user_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_match_players_unique_host
+  ON public.match_players(match_id)
+  WHERE is_host = TRUE;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'match_players_score_check'
+      AND conrelid = 'public.match_players'::regclass
+  ) THEN
+    ALTER TABLE public.match_players
+      ADD CONSTRAINT match_players_score_check
+      CHECK (score >= 0);
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'match_players_order_check'
+      AND conrelid = 'public.match_players'::regclass
+  ) THEN
+    ALTER TABLE public.match_players
+      ADD CONSTRAINT match_players_order_check
+      CHECK (player_order > 0);
+  END IF;
+END $$;
 
 -- ================================================
 -- 4. MATCHMAKING_QUEUE Table

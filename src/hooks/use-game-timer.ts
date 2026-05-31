@@ -11,7 +11,7 @@ import {
 
 type UseGameTimerProps = {
   duration: number
-  onExpire?: () => void
+  onExpire?: () => void | Promise<void>
   /**
    * Whether to start the timer automatically on mount
    * @default false

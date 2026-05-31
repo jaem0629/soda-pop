@@ -72,9 +72,9 @@ function SoloFinished({
   onBackToLobby: () => void
 }) {
   return (
-    <div className='flex flex-1 items-center justify-center p-4'>
+    <div className='flex flex-1 items-center justify-center p-2 sm:p-4'>
       <div className='flex w-full max-w-lg flex-col items-center'>
-        <h1 className='mb-1 bg-linear-to-r from-green-400 to-emerald-300 bg-clip-text text-5xl font-black tracking-tight text-transparent'>
+        <h1 className='mb-1 bg-linear-to-r from-green-400 to-emerald-300 bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl'>
           GAME OVER
         </h1>
         <p className='mb-8 text-white/50'>Nice playing!</p>
@@ -85,7 +85,7 @@ function SoloFinished({
             <span className='font-medium text-white/40'>Your Score</span>
           </div>
 
-          <div className='flex items-center gap-4 rounded-2xl bg-white/10 p-4'>
+          <div className='flex items-center gap-4 rounded-lg bg-white/10 p-4'>
             <div className='flex size-10 items-center justify-center rounded-full bg-linear-to-br from-green-500 to-emerald-500 text-xs font-bold'>
               {myPlayer.player_name.charAt(0).toUpperCase()}
             </div>
@@ -100,7 +100,7 @@ function SoloFinished({
 
         <button
           onClick={onBackToLobby}
-          className='flex h-14 w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-blue-500 to-purple-500 text-lg font-bold transition-opacity hover:opacity-90'
+          className='flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-white text-base font-black text-slate-950 transition hover:bg-sky-100 sm:h-14 sm:text-lg'
         >
           <HomeIcon className='size-5' />
           Back to Lobby
@@ -138,11 +138,11 @@ function BattleFinished({
   ].sort((a, b) => b.score - a.score)
 
   return (
-    <div className='flex flex-1 items-center justify-center p-4'>
+    <div className='flex flex-1 items-center justify-center p-2 sm:p-4'>
       <div className='flex w-full max-w-lg flex-col items-center'>
         <h1
           className={cn(
-            'mb-1 text-5xl font-black tracking-tight',
+            'mb-1 text-4xl font-black tracking-tight sm:text-5xl',
             config.className,
           )}
         >
@@ -171,7 +171,7 @@ function BattleFinished({
 
         <button
           onClick={onBackToLobby}
-          className='flex h-14 w-full cursor-pointer items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-blue-500 to-purple-500 text-lg font-bold transition-opacity hover:opacity-90'
+          className='flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-white text-base font-black text-slate-950 transition hover:bg-sky-100 sm:h-14 sm:text-lg'
         >
           <HomeIcon className='size-5' />
           Back to Lobby
@@ -191,7 +191,7 @@ function ScoreRow({
   return (
     <div
       className={cn(
-        'flex items-center gap-4 rounded-2xl p-4',
+        'flex items-center gap-4 rounded-lg p-4',
         player.isMe ? 'bg-white/10' : 'bg-white/5',
       )}
     >

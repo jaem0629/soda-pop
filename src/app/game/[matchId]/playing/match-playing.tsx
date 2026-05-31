@@ -53,18 +53,21 @@ function SoloPlayingContent({
   const gameEndSentRef = useRef(false)
   const scoreRef = useRef(initialPlayer.score)
 
-  const saveMyScore = useCallback(() => {
+  const saveMyScore = useCallback(async () => {
     if (gameEndSentRef.current) return false
     gameEndSentRef.current = true
-    updatePlayerScore(matchId, initialPlayer.player_order, scoreRef.current)
-    return true
+    return await updatePlayerScore(
+      matchId,
+      initialPlayer.player_order,
+      scoreRef.current,
+    )
   }, [matchId, initialPlayer.player_order])
 
   const timer = useGameTimer({
     duration: GAME_DURATION,
-    onExpire: () => {
-      if (!saveMyScore()) return
-      finishMatch(matchId)
+    onExpire: async () => {
+      if (!(await saveMyScore())) return
+      await finishMatch(matchId)
       router.push(`/game/${matchId}/finished`)
     },
     autoStart: true,
@@ -90,24 +93,24 @@ function SoloPlayingContent({
   const isUrgent = timer.timeLeft <= 10
 
   return (
-    <div className='flex h-full flex-col'>
-      <div className='shrink-0 px-4 py-3'>
+    <div className='flex h-full min-h-0 flex-col'>
+      <div className='shrink-0 px-2 py-2 sm:px-4 sm:py-3'>
         <div className='flex flex-col items-center gap-1'>
           <p
             className={cn(
-              'text-4xl font-black tabular-nums transition-colors',
+              'text-3xl font-black tabular-nums transition-colors sm:text-4xl',
               isUrgent && 'animate-pulse text-red-400',
             )}
           >
             {formatTime(timer.timeLeft)}
           </p>
-          <p className='bg-linear-to-r from-green-400 to-emerald-300 bg-clip-text text-3xl font-black text-transparent tabular-nums'>
+          <p className='bg-linear-to-r from-green-400 to-emerald-300 bg-clip-text text-2xl font-black text-transparent tabular-nums sm:text-3xl'>
             {myScore.toLocaleString()}
           </p>
         </div>
       </div>
 
-      <main className='min-h-0 flex-1 px-4 pb-4'>
+      <main className='min-h-0 flex-1 px-2 pb-2 sm:px-4 sm:pb-4'>
         <GameBoard
           onScoreChange={handleScoreChange}
           disabled={timer.isExpired}
@@ -136,18 +139,21 @@ function BattlePlayingContent({
   const gameEndSentRef = useRef(false)
   const scoreRef = useRef(initialPlayer.score)
 
-  const saveMyScore = useCallback(() => {
+  const saveMyScore = useCallback(async () => {
     if (gameEndSentRef.current) return false
     gameEndSentRef.current = true
-    updatePlayerScore(matchId, initialPlayer.player_order, scoreRef.current)
-    return true
+    return await updatePlayerScore(
+      matchId,
+      initialPlayer.player_order,
+      scoreRef.current,
+    )
   }, [matchId, initialPlayer.player_order])
 
   const timer = useGameTimer({
     duration: GAME_DURATION,
-    onExpire: () => {
-      if (!saveMyScore()) return
-      finishMatch(matchId)
+    onExpire: async () => {
+      if (!(await saveMyScore())) return
+      await finishMatch(matchId)
       sendGameEnd()
       router.push(`/game/${matchId}/finished`)
     },
@@ -195,9 +201,9 @@ function BattlePlayingContent({
   const isTied = myScore === opponentScore
 
   return (
-    <div className='flex h-full flex-col'>
-      <div className='shrink-0 px-4 py-3'>
-        <div className='flex items-center gap-3'>
+    <div className='flex h-full min-h-0 flex-col'>
+      <div className='shrink-0 px-2 py-2 sm:px-4 sm:py-3'>
+        <div className='grid grid-cols-3 items-center gap-2 sm:flex sm:gap-3'>
           <div className='flex min-w-0 flex-1 items-center gap-2'>
             <div className='flex size-8 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-purple-500 text-xs font-bold'>
               {initialPlayer.player_name.charAt(0).toUpperCase()}
@@ -229,10 +235,10 @@ function BattlePlayingContent({
             </div>
           </div>
 
-          <div className='flex shrink-0 flex-col items-center px-8'>
+          <div className='flex shrink-0 flex-col items-center px-1 sm:px-8'>
             <p
               className={cn(
-                'text-3xl font-black tabular-nums transition-colors',
+                'text-2xl font-black tabular-nums transition-colors sm:text-3xl',
                 isUrgent && 'animate-pulse text-red-400',
               )}
             >
@@ -266,7 +272,7 @@ function BattlePlayingContent({
         </div>
       </div>
 
-      <main className='min-h-0 flex-1 px-4 pb-4'>
+      <main className='min-h-0 flex-1 px-2 pb-2 sm:px-4 sm:pb-4'>
         <GameBoard
           onScoreChange={handleScoreChange}
           disabled={timer.isExpired}

@@ -18,9 +18,9 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang='ko' className={GeistSans.className}>
-      <body className='flex h-svh flex-col antialiased'>
+      <body className='flex min-h-svh flex-col overflow-x-hidden antialiased'>
         <Header />
-        <div className='mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-16 py-8'>
+        <div className='mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-4 py-4 sm:px-6 sm:py-6 lg:px-8'>
           {children}
         </div>
         <Suspense fallback={null}>

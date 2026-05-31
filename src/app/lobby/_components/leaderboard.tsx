@@ -17,7 +17,7 @@ export function Leaderboard({ soloEntries, battleEntries }: LeaderboardProps) {
   const entries = tab === 'solo' ? soloEntries : battleEntries
 
   return (
-    <div className='flex h-full flex-col rounded-2xl bg-white/5 p-5'>
+    <div className='flex h-full flex-col rounded-lg border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/20 sm:p-5'>
       <div className='mb-4 flex items-center justify-between'>
         <div className='flex items-center gap-2'>
           <TrophyIcon className='size-4 text-amber-400' />
@@ -26,11 +26,11 @@ export function Leaderboard({ soloEntries, battleEntries }: LeaderboardProps) {
           </p>
         </div>
 
-        <div className='flex gap-1 rounded-xl bg-white/5'>
+        <div className='flex gap-1 rounded-lg bg-white/5 p-1'>
           <button
             onClick={() => setTab('solo')}
             className={cn(
-              'flex-1 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition-colors',
+              'flex-1 cursor-pointer rounded-md px-3 py-2 text-xs font-bold transition-colors',
               tab === 'solo'
                 ? 'bg-white/10 text-white'
                 : 'text-white/40 hover:text-white/60',
@@ -41,7 +41,7 @@ export function Leaderboard({ soloEntries, battleEntries }: LeaderboardProps) {
           <button
             onClick={() => setTab('battle')}
             className={cn(
-              'flex-1 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition-colors',
+              'flex-1 cursor-pointer rounded-md px-3 py-2 text-xs font-bold transition-colors',
               tab === 'battle'
                 ? 'bg-white/10 text-white'
                 : 'text-white/40 hover:text-white/60',
@@ -61,11 +61,11 @@ export function Leaderboard({ soloEntries, battleEntries }: LeaderboardProps) {
           {entries.map((entry, i) => (
             <div
               key={`${entry.user_ids.join('-')}-${entry.score}-${i}`}
-              className='flex items-center gap-3 rounded-xl px-2 py-1.5'
+              className='flex items-center gap-3 rounded-lg px-2 py-2'
             >
               <span
                 className={cn(
-                  'flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold',
+                  'flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold',
                   i === 0
                     ? 'bg-amber-400/20 text-amber-400'
                     : i === 1
