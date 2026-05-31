@@ -6,9 +6,9 @@ export async function Header() {
   const user = await getCurrentUser()
 
   return (
-    <header className='flex w-full items-center justify-between px-4 py-3 sm:px-6 lg:px-8'>
+    <header className='flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-8'>
       <Link href='/'>
-        <span className='text-lg font-black tracking-tight sm:text-xl'>
+        <span className='soda-logo text-lg font-black tracking-tight sm:text-xl'>
           <span className='text-red-400'>S</span>
           <span className='text-green-400'>O</span>
           <span className='text-blue-400'>D</span>

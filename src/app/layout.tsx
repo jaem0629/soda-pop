@@ -20,9 +20,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang='ko' className={GeistSans.className}>
       <body className='flex min-h-svh flex-col overflow-x-hidden antialiased'>
         <Header />
-        <div className='mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-4 py-4 sm:px-6 sm:py-6 lg:px-8'>
-          {children}
-        </div>
+        <div className='flex min-h-0 w-full flex-1 flex-col'>{children}</div>
         <Suspense fallback={null}>
           <Analytics />
           <SpeedInsights />

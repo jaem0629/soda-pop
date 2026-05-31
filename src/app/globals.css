@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 :root {
-  --background: oklch(0.13 0.02 245);
+  --background: oklch(0.12 0.025 260);
   --foreground: oklch(0.985 0 0);
 }
 
@@ -16,10 +16,16 @@
   }
   body {
     @apply bg-background text-foreground;
-    background:
-      linear-gradient(135deg, rgb(15 23 42), rgb(20 20 28) 45%, rgb(39 18 24)),
-      var(--background);
+    background: var(--background);
     overscroll-behavior: none;
     touch-action: manipulation;
+  }
+}
+
+@layer utilities {
+  .soda-logo {
+    text-shadow:
+      0 1px 0 rgb(255 255 255 / 0.22),
+      0 10px 28px rgb(0 0 0 / 0.35);
   }
 }

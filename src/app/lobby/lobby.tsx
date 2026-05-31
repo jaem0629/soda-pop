@@ -3,19 +3,21 @@
 import { useRouter } from 'next/navigation'
 import { createMatch, joinMatch, joinQuickBattle } from './_lib/actions'
 import type { LeaderboardEntry } from './_lib/queries'
-import { Leaderboard } from './_components/leaderboard'
+import { LeaderboardDialog } from './_components/leaderboard-dialog'
 import { ModeSelect } from './_components/mode-select'
 
 interface LobbyProps {
   nickname: string
   soloLeaderboard: LeaderboardEntry[]
   battleLeaderboard: LeaderboardEntry[]
+  defaultLeaderboardOpen?: boolean
 }
 
 export function Lobby({
   nickname,
   soloLeaderboard,
   battleLeaderboard,
+  defaultLeaderboardOpen = false,
 }: LobbyProps) {
   const router = useRouter()
 
@@ -53,35 +55,29 @@ export function Lobby({
   }
 
   return (
-    <main className='flex flex-1 flex-col gap-6 lg:grid lg:grid-cols-3'>
-      <div className='flex min-w-0 flex-col gap-6 lg:col-span-2'>
-        <section className='rounded-lg border border-white/10 bg-white/5 p-5 shadow-2xl shadow-black/20'>
-          <p className='text-xs font-black tracking-widest text-white/40 uppercase'>
-            Lobby
-          </p>
-          <div className='mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between'>
-            <div>
-              <h1 className='text-4xl font-black tracking-tight sm:text-5xl'>
-                Ready, {nickname}
-              </h1>
-              <p className='mt-2 max-w-2xl text-sm font-medium text-white/60 sm:text-base'>
-                Pick a mode and pop chains before the timer runs out.
-              </p>
-            </div>
+    <main className='bg-background flex min-h-0 flex-1 items-center justify-center overflow-hidden px-4 py-4 sm:px-6 lg:px-8'>
+      <div className='w-full max-w-5xl rounded-3xl border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/20 sm:p-5'>
+        <div className='mb-4 flex items-center justify-between gap-4'>
+          <div className='min-w-0'>
+            <p className='text-xs font-semibold tracking-widest text-white/35 uppercase'>
+              Lobby
+            </p>
+            <h1 className='mt-1 truncate text-2xl font-black tracking-tight text-white sm:text-3xl'>
+              Choose a mode
+            </h1>
           </div>
-        </section>
+          <LeaderboardDialog
+            nickname={nickname}
+            soloEntries={soloLeaderboard}
+            battleEntries={battleLeaderboard}
+            defaultOpen={defaultLeaderboardOpen}
+          />
+        </div>
 
         <ModeSelect
           onJoinMatch={handleJoinMatch}
           onJoinQuickBattle={handleJoinQuickBattle}
           onCreateMatch={handleCreateMatch}
-        />
-      </div>
-
-      <div className='min-h-96 lg:min-h-0'>
-        <Leaderboard
-          soloEntries={soloLeaderboard}
-          battleEntries={battleLeaderboard}
         />
       </div>
     </main>
